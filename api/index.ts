@@ -1,6 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createApp } from '../src/app.js';
-import { connectDatabase } from '../src/config/index.js';
+
+// Register tsconfig-paths for runtime path alias resolution
+try {
+  require('tsconfig-paths/register');
+} catch {
+  // tsconfig-paths not available, will use compiled imports
+}
+
+import { createApp } from '../dist/app.js';
+import { connectDatabase } from '../dist/config/index.js';
 
 // Global app instance for serverless (persists across invocations)
 let appInstance: any = null;
