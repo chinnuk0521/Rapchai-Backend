@@ -21,18 +21,18 @@ export interface RefreshTokenPayload {
 export class JWTService {
   static generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
     return jwt.sign(payload, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN as string,
+      expiresIn: env.JWT_EXPIRES_IN,
       issuer: 'rapchai-api',
       audience: 'rapchai-client',
-    } as jwt.SignOptions);
+    });
   }
 
   static generateRefreshToken(payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>): string {
     return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-      expiresIn: env.JWT_REFRESH_EXPIRES_IN as string,
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
       issuer: 'rapchai-api',
       audience: 'rapchai-client',
-    } as jwt.SignOptions);
+    });
   }
 
   static verifyAccessToken(token: string): JWTPayload {

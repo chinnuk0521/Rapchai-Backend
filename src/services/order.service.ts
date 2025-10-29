@@ -50,8 +50,8 @@ export class OrderService {
       });
 
       // Generate unique order number
-      const orderNumber = `RC${Date.now().toString().slice(-10)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-
+      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
+      
       // Create order with items
       const order = await prisma.order.create({
         data: {
