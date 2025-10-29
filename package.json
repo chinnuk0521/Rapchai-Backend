@@ -60,6 +60,7 @@
     "socket.io": "^4.8.1",
     "socket.io-redis-adapter": "^8.2.1",
     "sqlite3": "^5.1.7",
+    "tsconfig-paths": "^4.2.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
