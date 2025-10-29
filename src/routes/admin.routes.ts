@@ -7,7 +7,7 @@ async function adminRoutes(fastify: FastifyInstance) {
   // Dashboard analytics
   fastify.get('/dashboard', {
     preHandler: [adminMiddleware],
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     const result = await AdminService.getDashboardAnalytics();
     return reply.send(result);
   }));
@@ -16,8 +16,8 @@ async function adminRoutes(fastify: FastifyInstance) {
   // Get all events (admin only)
   fastify.get('/events', {
     preHandler: [adminMiddleware],
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-    const { page, limit } = request.query as any;
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
+    const { page, limit } = _request.query as any;
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     const result = await AdminService.getAllEvents(pageNum, limitNum);
@@ -63,9 +63,9 @@ async function adminRoutes(fastify: FastifyInstance) {
   // Get all bookings
   fastify.get('/bookings', {
     preHandler: [adminMiddleware],
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-    const { page, limit } = request.query as any;
-    const result = await AdminService.getAllBookings(page, limit);
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
+    const { page, limit } = _request.query as any;
+    const result = await AdminService.getAllBookings({ page, limit });
     return reply.send(result);
   }));
 
@@ -97,8 +97,8 @@ async function adminRoutes(fastify: FastifyInstance) {
   // Get all menu items
   fastify.get('/menu-items', {
     preHandler: [adminMiddleware],
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-    const { page, limit } = request.query as any;
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
+    const { page, limit } = _request.query as any;
     const result = await AdminService.getAllMenuItems(page, limit);
     return reply.send(result);
   }));
@@ -133,7 +133,7 @@ async function adminRoutes(fastify: FastifyInstance) {
   // Get all categories
   fastify.get('/categories', {
     preHandler: [adminMiddleware],
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     const result = await AdminService.getAllCategories();
     return reply.send({ categories: result });
   }));
@@ -170,7 +170,7 @@ async function adminRoutes(fastify: FastifyInstance) {
     preHandler: [adminMiddleware],
   }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
     const { startDate, endDate } = request.query as any;
-    const result = await AdminService.getSalesAnalytics(startDate, endDate);
+    const result = await AdminService.getSalesReport(startDate, endDate);
     return reply.send({ analytics: result });
   }));
 

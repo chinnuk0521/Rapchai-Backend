@@ -1,7 +1,7 @@
 import { prisma } from '@/config/database.js';
 import { CacheService } from '@/config/redis';
 import { AppError, NotFoundError, ConflictError } from '@/middleware/error.middleware.js';
-import logger from '@/utils/logger.js';
+import { loggers } from '@/utils/logger.js';
 import type { 
   CreateCategoryInput, 
   UpdateCategoryInput,
@@ -58,8 +58,8 @@ export class MenuService {
       await CacheService.set(cacheKey, result, 300);
 
       return result;
-    } catch (error) {
-      logger.error('Get all categories failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all categories failed:', error);
       throw error;
     }
   }
@@ -92,8 +92,8 @@ export class MenuService {
       await CacheService.set(cacheKey, category, 600);
 
       return category;
-    } catch (error) {
-      logger.error('Get category by ID failed:', error);
+    } catch (error: any) {
+      loggers.error('Get category by ID failed:', error);
       throw error;
     }
   }
@@ -118,8 +118,8 @@ export class MenuService {
         data: {
           name: data.name,
           slug: data.slug,
-          description: data.description,
-          imageUrl: data.imageUrl,
+          description: data.description || null,
+          imageUrl: data.imageUrl || null,
           sortOrder: data.sortOrder,
         },
         include: {
@@ -130,11 +130,11 @@ export class MenuService {
       // Clear categories cache
       await CacheService.delPattern('categories:*');
 
-      logger.info('Category created successfully', { categoryId: category.id });
+      loggers.info('Category created successfully', { categoryId: category.id });
 
       return category;
-    } catch (error) {
-      logger.error('Create category failed:', error);
+    } catch (error: any) {
+      loggers.error('Create category failed:', error);
       throw error;
     }
   }
@@ -189,11 +189,11 @@ export class MenuService {
       await CacheService.del(`category:${id}`);
       await CacheService.delPattern('categories:*');
 
-      logger.info('Category updated successfully', { categoryId: category.id });
+      loggers.info('Category updated successfully', { categoryId: category.id });
 
       return category;
-    } catch (error) {
-      logger.error('Update category failed:', error);
+    } catch (error: any) {
+      loggers.error('Update category failed:', error);
       throw error;
     }
   }
@@ -223,11 +223,11 @@ export class MenuService {
       await CacheService.del(`category:${id}`);
       await CacheService.delPattern('categories:*');
 
-      logger.info('Category deleted successfully', { categoryId: id });
+      loggers.info('Category deleted successfully', { categoryId: id });
 
       return { message: 'Category deleted successfully' };
-    } catch (error) {
-      logger.error('Delete category failed:', error);
+    } catch (error: any) {
+      loggers.error('Delete category failed:', error);
       throw error;
     }
   }
@@ -260,19 +260,19 @@ export class MenuService {
           const menuItem = await prisma.menuItem.create({
             data: {
               name: item.name,
-              description: item.description || '',
+              description: item.description || null,
               pricePaise: Math.round(parseFloat(item.price) * 100), // Convert to paise
-              imageUrl: item.imageUrl || '',
+              imageUrl: item.imageUrl || null,
               isVeg: item.isVeg === 'true' || item.isVeg === true,
               isAvailable: item.isAvailable === 'true' || item.isAvailable === true,
               categoryId: category.id,
-              calories: item.calories ? parseInt(item.calories) : undefined,
-              prepTime: item.prepTime ? parseInt(item.prepTime) : undefined,
+              calories: item.calories ? parseInt(item.calories) : null,
+              prepTime: item.prepTime ? parseInt(item.prepTime) : null,
             },
           });
 
           results.push(menuItem);
-        } catch (error) {
+        } catch (error: any) {
           errors.push({ item, error: error.message });
         }
       }
@@ -282,12 +282,12 @@ export class MenuService {
 
       return {
         success: results.length,
-        errors: errors.length,
+        errorCount: errors.length,
         results,
         errors,
       };
-    } catch (error) {
-      logger.error('Error in bulk create menu items:', error);
+    } catch (error: any) {
+      loggers.error('Error in bulk create menu items:', error);
       throw new AppError('Failed to bulk create menu items', 500);
     }
   }
@@ -347,8 +347,8 @@ export class MenuService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get all menu items failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all menu items failed:', error);
       throw error;
     }
   }
@@ -384,8 +384,8 @@ export class MenuService {
       await CacheService.set(cacheKey, item, 600);
 
       return item;
-    } catch (error) {
-      logger.error('Get menu item by ID failed:', error);
+    } catch (error: any) {
+      loggers.error('Get menu item by ID failed:', error);
       throw error;
     }
   }
@@ -404,9 +404,9 @@ export class MenuService {
       const item = await prisma.menuItem.create({
         data: {
           name: data.name,
-          description: data.description,
+          description: data.description || null,
           pricePaise: data.pricePaise,
-          imageUrl: data.imageUrl,
+          imageUrl: data.imageUrl || null,
           isVeg: data.isVeg,
           isAvailable: data.isAvailable,
           categoryId: data.categoryId,
@@ -427,11 +427,11 @@ export class MenuService {
       await CacheService.delPattern('menuItems:*');
       await CacheService.del(`category:${data.categoryId}`);
 
-      logger.info('Menu item created successfully', { itemId: item.id });
+      loggers.info('Menu item created successfully', { itemId: item.id });
 
       return item;
-    } catch (error) {
-      logger.error('Create menu item failed:', error);
+    } catch (error: any) {
+      loggers.error('Create menu item failed:', error);
       throw error;
     }
   }
@@ -486,11 +486,11 @@ export class MenuService {
       await CacheService.delPattern('menuItems:*');
       await CacheService.del(`category:${item.categoryId}`);
 
-      logger.info('Menu item updated successfully', { itemId: item.id });
+      loggers.info('Menu item updated successfully', { itemId: item.id });
 
       return item;
-    } catch (error) {
-      logger.error('Update menu item failed:', error);
+    } catch (error: any) {
+      loggers.error('Update menu item failed:', error);
       throw error;
     }
   }
@@ -515,11 +515,11 @@ export class MenuService {
       await CacheService.delPattern('menuItems:*');
       await CacheService.del(`category:${item.categoryId}`);
 
-      logger.info('Menu item deleted successfully', { itemId: id });
+      loggers.info('Menu item deleted successfully', { itemId: id });
 
       return { message: 'Menu item deleted successfully' };
-    } catch (error) {
-      logger.error('Delete menu item failed:', error);
+    } catch (error: any) {
+      loggers.error('Delete menu item failed:', error);
       throw error;
     }
   }
@@ -553,14 +553,14 @@ export class MenuService {
       await CacheService.delPattern('menuItems:*');
       await CacheService.del(`category:${item.categoryId}`);
 
-      logger.info('Menu item availability toggled', { 
+      loggers.info('Menu item availability toggled', { 
         itemId: id, 
         isAvailable: updatedItem.isAvailable 
       });
 
       return updatedItem;
-    } catch (error) {
-      logger.error('Toggle item availability failed:', error);
+    } catch (error: any) {
+      loggers.error('Toggle item availability failed:', error);
       throw error;
     }
   }
@@ -605,8 +605,8 @@ export class MenuService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get menu items by category failed:', error);
+    } catch (error: any) {
+      loggers.error('Get menu items by category failed:', error);
       throw error;
     }
   }
@@ -665,8 +665,8 @@ export class MenuService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Search menu items failed:', error);
+    } catch (error: any) {
+      loggers.error('Search menu items failed:', error);
       throw error;
     }
   }

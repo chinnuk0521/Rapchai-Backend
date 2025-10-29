@@ -1,7 +1,8 @@
 import { prisma } from '@/config/database.js';
 import { CacheService } from '@/config/redis';
 import { AppError, NotFoundError, ConflictError } from '@/middleware/error.middleware.js';
-import logger from '@/utils/logger.js';
+import { loggers } from '@/utils/logger.js';
+import { BookingStatus } from '../generated/prisma/enums';
 import type { 
   CreateEventInput,
   UpdateEventInput,
@@ -92,8 +93,8 @@ export class AdminService {
           return acc;
         }, {} as any),
       };
-    } catch (error) {
-      logger.error('Get dashboard analytics failed:', error);
+    } catch (error: any) {
+      loggers.error('Get dashboard analytics failed:', error);
       throw error;
     }
   }
@@ -131,8 +132,8 @@ export class AdminService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get all events failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all events failed:', error);
       throw error;
     }
   }
@@ -162,8 +163,8 @@ export class AdminService {
       }
 
       return event;
-    } catch (error) {
-      logger.error('Get event by ID failed:', error);
+    } catch (error: any) {
+      loggers.error('Get event by ID failed:', error);
       throw error;
     }
   }
@@ -173,25 +174,25 @@ export class AdminService {
       const event = await prisma.event.create({
         data: {
           title: data.title,
-          description: data.description,
+          description: data.description || null,
           startAt: new Date(data.startAt),
           endAt: data.endAt ? new Date(data.endAt) : null,
-          imageUrl: data.imageUrl,
-          location: data.location,
-          externalUrl: data.externalUrl,
-          maxCapacity: data.maxCapacity,
-          pricePaise: data.pricePaise,
+          imageUrl: data.imageUrl || null,
+          location: data.location || null,
+          externalUrl: data.externalUrl || null,
+          maxCapacity: data.maxCapacity || null,
+          pricePaise: data.pricePaise || null,
         },
         include: {
           bookings: true,
         },
       });
 
-      logger.info('Event created successfully', { eventId: event.id });
+      loggers.info('Event created successfully', { eventId: event.id });
 
       return event;
-    } catch (error) {
-      logger.error('Create event failed:', error);
+    } catch (error: any) {
+      loggers.error('Create event failed:', error);
       throw error;
     }
   }
@@ -224,11 +225,11 @@ export class AdminService {
         },
       });
 
-      logger.info('Event updated successfully', { eventId: event.id });
+      loggers.info('Event updated successfully', { eventId: event.id });
 
       return event;
-    } catch (error) {
-      logger.error('Update event failed:', error);
+    } catch (error: any) {
+      loggers.error('Update event failed:', error);
       throw error;
     }
   }
@@ -253,11 +254,11 @@ export class AdminService {
         where: { id },
       });
 
-      logger.info('Event deleted successfully', { eventId: id });
+      loggers.info('Event deleted successfully', { eventId: id });
 
       return { message: 'Event deleted successfully' };
-    } catch (error) {
-      logger.error('Delete event failed:', error);
+    } catch (error: any) {
+      loggers.error('Delete event failed:', error);
       throw error;
     }
   }
@@ -331,8 +332,8 @@ export class AdminService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get all bookings failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all bookings failed:', error);
       throw error;
     }
   }
@@ -369,8 +370,8 @@ export class AdminService {
       }
 
       return booking;
-    } catch (error) {
-      logger.error('Get booking by ID failed:', error);
+    } catch (error: any) {
+      loggers.error('Get booking by ID failed:', error);
       throw error;
     }
   }
@@ -433,11 +434,11 @@ export class AdminService {
         });
       }
 
-      logger.info('Booking created successfully', { bookingId: booking.id });
+      loggers.info('Booking created successfully', { bookingId: booking.id });
 
       return booking;
-    } catch (error) {
-      logger.error('Create booking failed:', error);
+    } catch (error: any) {
+      loggers.error('Create booking failed:', error);
       throw error;
     }
   }
@@ -454,7 +455,7 @@ export class AdminService {
 
       const updatedBooking = await prisma.booking.update({
         where: { id },
-        data: { status },
+        data: { status: status as BookingStatus },
         include: {
           event: {
             select: {
@@ -474,14 +475,14 @@ export class AdminService {
         },
       });
 
-      logger.info('Booking status updated', { 
+      loggers.info('Booking status updated', { 
         bookingId: id, 
         status 
       });
 
       return updatedBooking;
-    } catch (error) {
-      logger.error('Update booking status failed:', error);
+    } catch (error: any) {
+      loggers.error('Update booking status failed:', error);
       throw error;
     }
   }
@@ -516,8 +517,8 @@ export class AdminService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get all media failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all media failed:', error);
       throw error;
     }
   }
@@ -540,16 +541,19 @@ export class AdminService {
       const media = await prisma.media.create({
         data: {
           url: `uploads/${data.filename}`,
+          filename: data.filename,
+          mimeType: data.mimetype,
+          size: data.size || 0,
           caption: data.filename,
           type: data.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
         },
       });
 
-      logger.info('Media uploaded successfully', { mediaId: media.id });
+      loggers.info('Media uploaded successfully', { mediaId: media.id });
 
       return media;
-    } catch (error) {
-      logger.error('Upload media failed:', error);
+    } catch (error: any) {
+      loggers.error('Upload media failed:', error);
       throw error;
     }
   }
@@ -568,11 +572,11 @@ export class AdminService {
         where: { id },
       });
 
-      logger.info('Media deleted successfully', { mediaId: id });
+      loggers.info('Media deleted successfully', { mediaId: id });
 
       return { message: 'Media deleted successfully' };
-    } catch (error) {
-      logger.error('Delete media failed:', error);
+    } catch (error: any) {
+      loggers.error('Delete media failed:', error);
       throw error;
     }
   }
@@ -601,8 +605,8 @@ export class AdminService {
         minOrderAmount: 500, // paise
         taxRate: 8.5, // percentage
       };
-    } catch (error) {
-      logger.error('Get system settings failed:', error);
+    } catch (error: any) {
+      loggers.error('Get system settings failed:', error);
       throw error;
     }
   }
@@ -612,11 +616,11 @@ export class AdminService {
       // This would typically update a settings table
       // For now, just return the updated data
       
-      logger.info('System settings updated', { settings: data });
+      loggers.info('System settings updated', { settings: data });
 
       return data;
-    } catch (error) {
-      logger.error('Update system settings failed:', error);
+    } catch (error: any) {
+      loggers.error('Update system settings failed:', error);
       throw error;
     }
   }
@@ -701,8 +705,8 @@ export class AdminService {
         },
         data: Object.values(groupedData),
       };
-    } catch (error) {
-      logger.error('Get sales report failed:', error);
+    } catch (error: any) {
+      loggers.error('Get sales report failed:', error);
       throw error;
     }
   }
@@ -763,8 +767,8 @@ export class AdminService {
         })),
         customerOrders,
       };
-    } catch (error) {
-      logger.error('Get customer analytics failed:', error);
+    } catch (error: any) {
+      loggers.error('Get customer analytics failed:', error);
       throw error;
     }
   }
@@ -803,8 +807,8 @@ export class AdminService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get all menu items failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all menu items failed:', error);
       throw error;
     }
   }
@@ -839,8 +843,8 @@ export class AdminService {
       });
 
       return menuItem;
-    } catch (error) {
-      logger.error('Create menu item failed:', error);
+    } catch (error: any) {
+      loggers.error('Create menu item failed:', error);
       throw error;
     }
   }
@@ -878,8 +882,8 @@ export class AdminService {
       });
 
       return menuItem;
-    } catch (error) {
-      logger.error('Update menu item failed:', error);
+    } catch (error: any) {
+      loggers.error('Update menu item failed:', error);
       throw error;
     }
   }
@@ -889,8 +893,8 @@ export class AdminService {
       await prisma.menuItem.delete({
         where: { id },
       });
-    } catch (error) {
-      logger.error('Delete menu item failed:', error);
+    } catch (error: any) {
+      loggers.error('Delete menu item failed:', error);
       throw error;
     }
   }
@@ -905,8 +909,8 @@ export class AdminService {
       });
 
       return categories;
-    } catch (error) {
-      logger.error('Get all categories failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all categories failed:', error);
       throw error;
     }
   }
@@ -918,8 +922,8 @@ export class AdminService {
       });
 
       return category;
-    } catch (error) {
-      logger.error('Create category failed:', error);
+    } catch (error: any) {
+      loggers.error('Create category failed:', error);
       throw error;
     }
   }
@@ -932,8 +936,8 @@ export class AdminService {
       });
 
       return category;
-    } catch (error) {
-      logger.error('Update category failed:', error);
+    } catch (error: any) {
+      loggers.error('Update category failed:', error);
       throw error;
     }
   }
@@ -952,8 +956,8 @@ export class AdminService {
       await prisma.category.delete({
         where: { id },
       });
-    } catch (error) {
-      logger.error('Delete category failed:', error);
+    } catch (error: any) {
+      loggers.error('Delete category failed:', error);
       throw error;
     }
   }

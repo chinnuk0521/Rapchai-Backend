@@ -1,23 +1,28 @@
 import pino from 'pino';
 import { env } from '@/config/env.js';
 
-const logger = pino({
+const loggerConfig: any = {
   level: env.LOG_LEVEL,
-  transport: env.LOG_PRETTY_PRINT && env.NODE_ENV === 'development' ? {
+  formatters: {
+    level: (label: string) => {
+      return { level: label };
+    },
+  },
+  timestamp: pino.stdTimeFunctions.isoTime,
+};
+
+if (env.LOG_PRETTY_PRINT && env.NODE_ENV === 'development') {
+  loggerConfig.transport = {
     target: 'pino-pretty',
     options: {
       colorize: true,
       translateTime: 'SYS:standard',
       ignore: 'pid,hostname',
     },
-  } : undefined,
-  formatters: {
-    level: (label) => {
-      return { level: label };
-    },
-  },
-  timestamp: pino.stdTimeFunctions.isoTime,
-});
+  };
+}
+
+const logger = pino(loggerConfig);
 
 export default logger;
 

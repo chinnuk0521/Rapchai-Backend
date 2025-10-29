@@ -3,7 +3,7 @@ import { HashService } from '@/utils/hash.js';
 import { JWTService } from '@/utils/jwt.js';
 import { CacheService } from '@/config/redis.js';
 import { AppError, UnauthorizedError, ConflictError, NotFoundError } from '@/middleware/error.middleware.js';
-import logger from '@/utils/logger.js';
+import { loggers } from '@/utils/logger.js';
 import type { 
   LoginInput, 
   RegisterInput, 
@@ -54,15 +54,15 @@ export class AuthService {
 
       const refreshToken = await JWTService.createRefreshToken(user.id);
 
-      logger.info('User registered successfully', { userId: user.id, email: user.email });
+      loggers.info('User registered successfully', { userId: user.id, email: user.email });
 
       return {
         user,
         accessToken,
         refreshToken,
       };
-    } catch (error) {
-      logger.error('Registration failed:', error);
+    } catch (error: any) {
+      loggers.error('Registration failed:', error);
       throw error;
     }
   }
@@ -153,7 +153,7 @@ export class AuthService {
         name: user.name,
       }, 3600); // 1 hour
 
-      logger.info('User logged in successfully', { userId: user.id, email: user.email });
+      loggers.info('User logged in successfully', { userId: user.id, email: user.email });
 
       return {
         user: {
@@ -166,8 +166,8 @@ export class AuthService {
         accessToken,
         refreshToken,
       };
-    } catch (error) {
-      logger.error('Login failed:', error);
+    } catch (error: any) {
+      loggers.error('Login failed:', error);
       throw error;
     }
   }
@@ -201,14 +201,14 @@ export class AuthService {
       // Optionally generate new refresh token (refresh token rotation)
       const newRefreshToken = await JWTService.createRefreshToken(user.id);
 
-      logger.info('Token refreshed successfully', { userId: user.id });
+      loggers.info('Token refreshed successfully', { userId: user.id });
 
       return {
         accessToken,
         refreshToken: newRefreshToken,
       };
-    } catch (error) {
-      logger.error('Token refresh failed:', error);
+    } catch (error: any) {
+      loggers.error('Token refresh failed:', error);
       throw error;
     }
   }
@@ -221,11 +221,11 @@ export class AuthService {
       // Clear user cache
       await CacheService.del(`user:${userId}`);
 
-      logger.info('User logged out successfully', { userId });
+      loggers.info('User logged out successfully', { userId });
 
       return { message: 'Logged out successfully' };
-    } catch (error) {
-      logger.error('Logout failed:', error);
+    } catch (error: any) {
+      loggers.error('Logout failed:', error);
       throw error;
     }
   }
@@ -261,11 +261,11 @@ export class AuthService {
       // Revoke all refresh tokens to force re-login
       await JWTService.revokeAllUserTokens(userId);
 
-      logger.info('Password changed successfully', { userId });
+      loggers.info('Password changed successfully', { userId });
 
       return { message: 'Password changed successfully' };
-    } catch (error) {
-      logger.error('Password change failed:', error);
+    } catch (error: any) {
+      loggers.error('Password change failed:', error);
       throw error;
     }
   }
@@ -301,11 +301,11 @@ export class AuthService {
         },
       });
 
-      logger.info('User created successfully', { userId: user.id, email: user.email });
+      loggers.info('User created successfully', { userId: user.id, email: user.email });
 
       return user;
-    } catch (error) {
-      logger.error('User creation failed:', error);
+    } catch (error: any) {
+      loggers.error('User creation failed:', error);
       throw error;
     }
   }
@@ -353,11 +353,11 @@ export class AuthService {
       // Clear user cache
       await CacheService.del(`user:${userId}`);
 
-      logger.info('User updated successfully', { userId: user.id });
+      loggers.info('User updated successfully', { userId: user.id });
 
       return user;
-    } catch (error) {
-      logger.error('User update failed:', error);
+    } catch (error: any) {
+      loggers.error('User update failed:', error);
       throw error;
     }
   }
@@ -391,8 +391,8 @@ export class AuthService {
       await CacheService.set(`user:${userId}`, user, 3600);
 
       return user;
-    } catch (error) {
-      logger.error('Get user failed:', error);
+    } catch (error: any) {
+      loggers.error('Get user failed:', error);
       throw error;
     }
   }
@@ -427,8 +427,8 @@ export class AuthService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get all users failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all users failed:', error);
       throw error;
     }
   }

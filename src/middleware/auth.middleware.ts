@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { JWTService } from '@/utils/jwt.js';
 import { prisma } from '@/config/database.js';
-import logger from '@/utils/logger.js';
+import { loggers } from '@/utils/logger.js';
 
 export interface AuthenticatedRequest extends FastifyRequest {
   user: {
@@ -50,8 +50,8 @@ export async function authMiddleware(
       role: user.role,
     };
 
-  } catch (error) {
-    logger.error('Authentication error:', error);
+  } catch (error: any) {
+    loggers.error('Authentication error:', error);
     return reply.status(401).send({
       error: 'Unauthorized',
       message: 'Invalid token',
@@ -68,7 +68,8 @@ export async function adminMiddleware(
     // First run auth middleware
     await authMiddleware(request, reply);
     
-    if (reply.statusCode === 401) {
+    // Check if reply was already sent (status code set means response sent)
+    if (reply.statusCode && reply.statusCode === 401) {
       return; // Auth middleware already sent response
     }
 
@@ -82,8 +83,8 @@ export async function adminMiddleware(
       });
     }
 
-  } catch (error) {
-    logger.error('Admin middleware error:', error);
+  } catch (error: any) {
+    loggers.error('Admin middleware error:', error);
     return reply.status(500).send({
       error: 'Internal Server Error',
       message: 'Authorization check failed',
@@ -94,7 +95,7 @@ export async function adminMiddleware(
 
 export async function optionalAuthMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ): Promise<void> {
   try {
     const authHeader = request.headers.authorization;
@@ -120,9 +121,9 @@ export async function optionalAuthMiddleware(
       };
     }
 
-  } catch (error) {
+  } catch (error: any) {
     // Ignore auth errors for optional auth
-    logger.debug('Optional auth failed:', error);
+    loggers.debug('Optional auth failed:', error);
   }
 }
 
@@ -139,8 +140,8 @@ export function requireRole(roles: string[]) {
         });
       }
 
-    } catch (error) {
-      logger.error('Role check error:', error);
+    } catch (error: any) {
+      loggers.error('Role check error:', error);
       return reply.status(500).send({
         error: 'Internal Server Error',
         message: 'Role check failed',
