@@ -8,18 +8,28 @@ let isDatabaseConnected = false;
 
 async function getApp() {
   if (!appInstance) {
-    // Connect database once
-    if (!isDatabaseConnected) {
-      await connectDatabase();
-      isDatabaseConnected = true;
-    }
-    
-    // Create Fastify app instance
-    appInstance = await createApp({
-      logger: false, // Disable logger in serverless
-    });
+    try {
+      // Connect database once
+      if (!isDatabaseConnected) {
+        console.log('Connecting to database...');
+        await connectDatabase();
+        isDatabaseConnected = true;
+        console.log('Database connected');
+      }
+      
+      // Create Fastify app instance
+      console.log('Creating Fastify app...');
+      appInstance = await createApp({
+        logger: false, // Disable logger in serverless
+      });
 
-    await appInstance.ready();
+      await appInstance.ready();
+      console.log('Fastify app ready');
+    } catch (error: any) {
+      console.error('Error initializing app:', error);
+      console.error('Error stack:', error?.stack);
+      throw error;
+    }
   }
   return appInstance;
 }
@@ -28,8 +38,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const fastifyApp = await getApp();
     
-    // Build the full URL path
-    const url = req.url || '/';
+    // Build the full URL path - handle Vercel's path format
+    let url = req.url || '/';
+    // Remove query string for routing if needed
+    if (url.includes('?')) {
+      url = url.split('?')[0];
+    }
     
     // Prepare headers (remove host-related headers that Vercel adds)
     const headers: any = {};
@@ -94,11 +108,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } catch (error: any) {
     console.error('Serverless function error:', error);
-    res.status(500).json({ 
+    console.error('Error message:', error?.message);
+    console.error('Error stack:', error?.stack);
+    const errorResponse: any = { 
       error: 'Internal server error', 
-      message: error.message,
-      ...(process.env['NODE_ENV'] === 'development' && { stack: error.stack })
-    });
+      message: error?.message || 'Unknown error',
+    };
+    if (process.env['NODE_ENV'] === 'development') {
+      errorResponse.stack = error?.stack;
+    }
+    res.status(500).json(errorResponse);
   }
 }
 
