@@ -1,7 +1,8 @@
 import { prisma } from '@/config/database.js';
 import { CacheService } from '@/config/redis';
 import { AppError, NotFoundError, ConflictError } from '@/middleware/error.middleware.js';
-import logger from '@/utils/logger.js';
+import { loggers } from '@/utils/logger.js';
+import { OrderType, OrderStatus, PaymentStatus } from '../generated/prisma/enums';
 import type { 
   CreateOrderInput, 
   OrderQueryInput 
@@ -55,7 +56,7 @@ export class OrderService {
           customerPhone: data.customerPhone,
           customerEmail: data.customerEmail,
           tableNumber: data.tableNumber,
-          orderType: data.orderType,
+          orderType: data.orderType.toUpperCase().replace(/-/g, '_') as OrderType,
           notes: data.notes,
           specialInstructions: data.specialInstructions,
           totalPaise,
@@ -84,14 +85,14 @@ export class OrderService {
       // Clear cache
       await CacheService.delPattern('orders:*');
 
-      logger.info('Order created successfully', { 
+      loggers.info('Order created successfully', { 
         orderId: order.id, 
         totalPaise: order.totalPaise 
       });
 
       return order;
-    } catch (error) {
-      logger.error('Create order failed:', error);
+    } catch (error: any) {
+      loggers.error('Create order failed:', error);
       throw error;
     }
   }
@@ -112,7 +113,7 @@ export class OrderService {
       const where: any = {};
 
       if (status) {
-        where.status = status;
+        where.status = status as OrderStatus;
       }
 
       if (orderType) {
@@ -120,7 +121,7 @@ export class OrderService {
       }
 
       if (paymentStatus) {
-        where.paymentStatus = paymentStatus;
+        where.paymentStatus = paymentStatus as PaymentStatus;
       }
 
       if (startDate || endDate) {
@@ -167,8 +168,8 @@ export class OrderService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get all orders failed:', error);
+    } catch (error: any) {
+      loggers.error('Get all orders failed:', error);
       throw error;
     }
   }
@@ -211,8 +212,8 @@ export class OrderService {
       await CacheService.set(cacheKey, order, 300);
 
       return order;
-    } catch (error) {
-      logger.error('Get order by ID failed:', error);
+    } catch (error: any) {
+      loggers.error('Get order by ID failed:', error);
       throw error;
     }
   }
@@ -255,8 +256,8 @@ export class OrderService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get orders by customer phone failed:', error);
+    } catch (error: any) {
+      loggers.error('Get orders by customer phone failed:', error);
       throw error;
     }
   }
@@ -287,7 +288,7 @@ export class OrderService {
 
       const updatedOrder = await prisma.order.update({
         where: { id },
-        data: { status },
+        data: { status: status as OrderStatus },
         include: {
           items: {
             include: {
@@ -309,15 +310,15 @@ export class OrderService {
       await CacheService.del(`order:${id}`);
       await CacheService.delPattern('orders:*');
 
-      logger.info('Order status updated', { 
+      loggers.info('Order status updated', { 
         orderId: id, 
         oldStatus: order.status, 
         newStatus: status 
       });
 
       return updatedOrder;
-    } catch (error) {
-      logger.error('Update order status failed:', error);
+    } catch (error: any) {
+      loggers.error('Update order status failed:', error);
       throw error;
     }
   }
@@ -334,7 +335,7 @@ export class OrderService {
 
       const updatedOrder = await prisma.order.update({
         where: { id },
-        data: { paymentStatus },
+        data: { paymentStatus: paymentStatus as PaymentStatus },
         include: {
           items: {
             include: {
@@ -356,14 +357,14 @@ export class OrderService {
       await CacheService.del(`order:${id}`);
       await CacheService.delPattern('orders:*');
 
-      logger.info('Payment status updated', { 
+      loggers.info('Payment status updated', { 
         orderId: id, 
         paymentStatus 
       });
 
       return updatedOrder;
-    } catch (error) {
-      logger.error('Update payment status failed:', error);
+    } catch (error: any) {
+      loggers.error('Update payment status failed:', error);
       throw error;
     }
   }
@@ -414,14 +415,14 @@ export class OrderService {
       await CacheService.del(`order:${id}`);
       await CacheService.delPattern('orders:*');
 
-      logger.info('Order cancelled', { 
+      loggers.info('Order cancelled', { 
         orderId: id, 
         reason 
       });
 
       return updatedOrder;
-    } catch (error) {
-      logger.error('Cancel order failed:', error);
+    } catch (error: any) {
+      loggers.error('Cancel order failed:', error);
       throw error;
     }
   }
@@ -508,13 +509,14 @@ export class OrderService {
         }, {} as any),
         topItems: topItemsWithDetails,
       };
-    } catch (error) {
-      logger.error('Get order analytics failed:', error);
+    } catch (error: any) {
+      loggers.error('Get order analytics failed:', error);
       throw error;
     }
   }
 
   static async getOrdersByStatus(status: string, page: number = 1, limit: number = 10) {
+    const orderStatus = status as OrderStatus;
     try {
       const skip = (page - 1) * limit;
 
@@ -522,7 +524,7 @@ export class OrderService {
         prisma.order.findMany({
           skip,
           take: limit,
-          where: { status },
+          where: { status: orderStatus },
           include: {
             items: {
               include: {
@@ -552,8 +554,8 @@ export class OrderService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get orders by status failed:', error);
+    } catch (error: any) {
+      loggers.error('Get orders by status failed:', error);
       throw error;
     }
   }
@@ -607,8 +609,8 @@ export class OrderService {
           pages: Math.ceil(total / limit),
         },
       };
-    } catch (error) {
-      logger.error('Get today\'s orders failed:', error);
+    } catch (error: any) {
+      loggers.error('Get today\'s orders failed:', error);
       throw error;
     }
   }

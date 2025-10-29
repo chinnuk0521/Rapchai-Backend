@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { ZodError } from 'zod';
-import logger from '@/utils/logger.js';
+import { loggers } from '@/utils/logger.js';
 
 export interface ValidationError {
   field: string;
@@ -64,8 +64,8 @@ export function errorHandler(
   error: Error,
   request: FastifyRequest,
   reply: FastifyReply
-): void {
-  logger.error('Error occurred:', {
+) {
+  loggers.error('Error occurred:', {
     error: error.message,
     stack: error.stack,
     url: request.url,
@@ -75,7 +75,7 @@ export function errorHandler(
 
   // Handle Zod validation errors
   if (error instanceof ZodError) {
-    const validationErrors: ValidationError[] = error.errors.map(err => ({
+    const validationErrors = error.errors.map(err => ({
       field: err.path.join('.'),
       message: err.message,
       code: err.code,
@@ -126,7 +126,7 @@ export function errorHandler(
         });
       
       default:
-        logger.error('Unhandled Prisma error:', prismaError);
+        loggers.error('Unhandled Prisma error:', prismaError);
         return reply.status(500).send({
           error: 'Internal Server Error',
           message: 'Database operation failed',

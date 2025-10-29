@@ -50,11 +50,11 @@ async function testRoutes(fastify: FastifyInstance) {
         message: 'Database connection successful',
         database: 'connected',
       });
-    } catch (error) {
+    } catch (error: any) {
       return reply.status(500).send({
         message: 'Database connection failed',
         database: 'disconnected',
-        error: error.message,
+        error: error?.message || String(error),
       });
     }
   }));
@@ -83,11 +83,11 @@ async function testRoutes(fastify: FastifyInstance) {
         message: 'Redis connection successful',
         redis: 'connected',
       });
-    } catch (error) {
+    } catch (error: any) {
       return reply.status(500).send({
         message: 'Redis connection failed',
         redis: 'disconnected',
-        error: error.message,
+        error: error?.message || String(error),
       });
     }
   }));
