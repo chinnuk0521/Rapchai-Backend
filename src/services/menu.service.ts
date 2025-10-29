@@ -1,7 +1,7 @@
 import { prisma } from '@/config/database.js';
 import { CacheService } from '@/config/redis';
 import { AppError, NotFoundError, ConflictError } from '@/middleware/error.middleware.js';
-import { loggers } from '@/utils/loggers.js';
+import { loggers } from '@/utils/logger.js';
 import type { 
   CreateCategoryInput, 
   UpdateCategoryInput,
@@ -282,7 +282,7 @@ export class MenuService {
 
       return {
         success: results.length,
-        errors: errors.length,
+        errorCount: errors.length,
         results,
         errors,
       };

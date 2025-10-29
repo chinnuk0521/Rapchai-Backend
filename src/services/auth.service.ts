@@ -3,7 +3,7 @@ import { HashService } from '@/utils/hash.js';
 import { JWTService } from '@/utils/jwt.js';
 import { CacheService } from '@/config/redis.js';
 import { AppError, UnauthorizedError, ConflictError, NotFoundError } from '@/middleware/error.middleware.js';
-import { loggers } from '@/utils/loggers.js';
+import { loggers } from '@/utils/logger.js';
 import type { 
   LoginInput, 
   RegisterInput, 

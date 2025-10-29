@@ -49,9 +49,13 @@ export class OrderService {
         };
       });
 
+      // Generate unique order number
+      const orderNumber = `RC${Date.now().toString().slice(-10)}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
       // Create order with items
       const order = await prisma.order.create({
         data: {
+          orderNumber,
           customerName: data.customerName,
           customerPhone: data.customerPhone,
           customerEmail: data.customerEmail,
@@ -542,7 +546,7 @@ export class OrderService {
           },
           orderBy: { createdAt: 'desc' },
         }),
-        prisma.order.count({ where: { status } }),
+        prisma.order.count({ where: { status: orderStatus } }),
       ]);
 
       return {

@@ -64,8 +64,8 @@ async function adminRoutes(fastify: FastifyInstance) {
   fastify.get('/bookings', {
     preHandler: [adminMiddleware],
   }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
-    const { page, limit } = _request.query as any;
-    const result = await AdminService.getAllBookings(page, limit);
+    const query = _request.query as any;
+    const result = await AdminService.getAllBookings(query);
     return reply.send(result);
   }));
 
