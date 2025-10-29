@@ -23,13 +23,6 @@ if (env.LOG_PRETTY_PRINT && env.NODE_ENV === 'development') {
 }
 
 const logger = pino(loggerConfig);
-  formatters: {
-    level: (label) => {
-      return { level: label };
-    },
-  },
-  timestamp: pino.stdTimeFunctions.isoTime,
-});
 
 export default logger;
 
