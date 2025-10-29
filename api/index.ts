@@ -1,14 +1,10 @@
+// Register tsconfig-paths FIRST before any other imports
+// This must be at the top to handle path aliases at runtime
+require('tsconfig-paths/register');
+
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-
-// Register tsconfig-paths for runtime path alias resolution
-try {
-  require('tsconfig-paths/register');
-} catch {
-  // tsconfig-paths not available, will use compiled imports
-}
-
-import { createApp } from '../dist/app.js';
-import { connectDatabase } from '../dist/config/index.js';
+import { createApp } from '../src/app.js';
+import { connectDatabase } from '../src/config/index.js';
 
 // Global app instance for serverless (persists across invocations)
 let appInstance: any = null;
