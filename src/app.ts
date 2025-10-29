@@ -1,6 +1,6 @@
 import Fastify, { FastifyInstance, FastifyServerOptions } from 'fastify';
 import { env } from '@/config/env.js';
-import { connectDatabase, connectRedis } from '@/config/index.js';
+import { connectDatabase } from '@/config/index.js';
 // import logger from '@/utils/logger.js';
 
 // Import plugins
@@ -22,7 +22,6 @@ import testRoutes from '@/routes/test.routes.js';
 
 // Import middleware
 import { errorHandler } from '@/middleware/error.middleware.js';
-import { authMiddleware } from '@/middleware/auth.middleware.js';
 
 export async function createApp(options: FastifyServerOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({
@@ -55,7 +54,7 @@ export async function createApp(options: FastifyServerOptions = {}): Promise<Fas
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_TIME_WINDOW,
-    errorResponseBuilder: (request, context) => ({
+    errorResponseBuilder: (_request, context) => ({
       error: 'Rate limit exceeded',
       statusCode: 429,
       message: `Rate limit exceeded, retry in ${Math.round(context.ttl / 1000)} seconds`,
@@ -113,16 +112,16 @@ export async function createApp(options: FastifyServerOptions = {}): Promise<Fas
       deepLinking: false,
     },
     uiHooks: {
-      onRequest: function (request, reply, next) {
+      onRequest: function (_request, _reply, next) {
         next();
       },
-      preHandler: function (request, reply, next) {
+      preHandler: function (_request, _reply, next) {
         next();
       },
     },
     staticCSP: true,
     transformStaticCSP: (header) => header,
-    transformSpecification: (swaggerObject, request, reply) => {
+    transformSpecification: (swaggerObject, _request, _reply) => {
       return swaggerObject;
     },
     transformSpecificationClone: true,
@@ -138,7 +137,7 @@ export async function createApp(options: FastifyServerOptions = {}): Promise<Fas
   await app.register(adminRoutes, { prefix: '/api/admin' });
 
   // Root route
-  app.get('/', async (request, reply) => {
+  app.get('/', async (_request, _reply) => {
     return {
       message: 'Welcome to Rapchai Café API',
       version: '1.0.0',

@@ -2,39 +2,34 @@ import Redis from 'ioredis';
 import { env } from './env.js';
 
 export const redis = new Redis(env.REDIS_URL, {
-  password: env.REDIS_PASSWORD,
+  ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
   enableReadyCheck: false,
   maxRetriesPerRequest: null,
   lazyConnect: true,
   connectTimeout: 5000,
   retryDelayOnClusterDown: 300,
   enableOfflineQueue: false,
-  maxRetriesPerRequest: 3,
 });
   
 export const pubRedis = new Redis(env.REDIS_URL, {
-  password: env.REDIS_PASSWORD,
+  ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
   maxRetriesPerRequest: null,
   lazyConnect: true,
   connectTimeout: 5000,
   retryDelayOnClusterDown: 300,
-  maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
   enableOfflineQueue: false,
 });
 
 export const subRedis = new Redis(env.REDIS_URL, {
-  password: env.REDIS_PASSWORD,
+  ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
   retryDelayOnFailover: 100,
   enableReadyCheck: false,
   maxRetriesPerRequest: null,
   lazyConnect: true,
   connectTimeout: 5000,
   retryDelayOnClusterDown: 300,
-  maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
   enableOfflineQueue: false,
 });
 
