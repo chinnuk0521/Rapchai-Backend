@@ -44,14 +44,18 @@
   },
   "include": [
     "src/**/*",
-    "prisma/**/*"
+    "api/**/*"
   ],
   "exclude": [
     "node_modules",
     "dist",
     "tests",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "prisma/seed.ts",
+    "prisma/**/*.seed.ts",
+    "**/*seed*.ts",
+    "**/*seed*.js"
   ],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
