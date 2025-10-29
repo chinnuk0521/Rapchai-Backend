@@ -1,0 +1,17 @@
+node_modules
+.env
+.env.local
+.env.*.local
+dist
+*.log
+.git
+.DS_Store
+*.test.ts
+*.spec.ts
+tests
+docker
+dev.db
+*.sql
+.vscode
+.idea
+
