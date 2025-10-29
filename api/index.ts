@@ -1,32 +1,7 @@
-// Manually configure path aliases for runtime resolution
-// This is needed because tsconfig.json might not be available in Vercel runtime
-const tsConfigPaths = require('tsconfig-paths');
-const path = require('path');
-
-// Get the project root (two levels up from api/index.ts)
-const projectRoot = path.resolve(__dirname, '..');
-
-// Manually register path aliases based on tsconfig.json paths
-tsConfigPaths.register({
-  baseUrl: path.join(projectRoot, 'src'),
-  paths: {
-    '@/*': ['*'],
-    '@/config/*': ['config/*'],
-    '@/controllers/*': ['controllers/*'],
-    '@/middleware/*': ['middleware/*'],
-    '@/routes/*': ['routes/*'],
-    '@/services/*': ['services/*'],
-    '@/schemas/*': ['schemas/*'],
-    '@/utils/*': ['utils/*'],
-    '@/types/*': ['types/*'],
-    '@/jobs/*': ['jobs/*'],
-    '@/plugins/*': ['plugins/*'],
-  },
-});
-
+// Import from compiled dist folder where tsc-alias has already resolved path aliases
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createApp } from '../src/app.js';
-import { connectDatabase } from '../src/config/index.js';
+import { createApp } from '../dist/app.js';
+import { connectDatabase } from '../dist/config/index.js';
 
 // Global app instance for serverless (persists across invocations)
 let appInstance: any = null;
