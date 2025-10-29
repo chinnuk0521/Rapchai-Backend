@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import * as argon2 from 'argon2';
 
 const prisma = new PrismaClient();
@@ -14,14 +14,14 @@ async function createAdminUser() {
   const adminUser = await prisma.user.upsert({
     where: { email: adminEmail },
     update: { 
-      role: "ADMIN" as Role, 
+      role: "ADMIN",
       passwordHash: adminPasswordHash,
       name: "Chandu Kalluru"
     },
     create: { 
       email: adminEmail, 
       name: "Chandu Kalluru", 
-      role: "ADMIN" as Role, 
+      role: "ADMIN", 
       passwordHash: adminPasswordHash 
     },
   });
