@@ -68,7 +68,8 @@ export async function adminMiddleware(
     // First run auth middleware
     await authMiddleware(request, reply);
     
-    if (reply.statusCode === 401) {
+    // Check if reply was already sent (status code set means response sent)
+    if (reply.statusCode && reply.statusCode === 401) {
       return; // Auth middleware already sent response
     }
 

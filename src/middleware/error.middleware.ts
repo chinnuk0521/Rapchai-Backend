@@ -163,7 +163,8 @@ export function errorHandler(
 
   // Default error response
   const statusCode = 500;
-  const message = process.env.NODE_ENV === 'production' 
+  const nodeEnv = process.env['NODE_ENV'];
+  const message = nodeEnv === 'production' 
     ? 'Internal Server Error' 
     : error.message;
 
@@ -171,7 +172,7 @@ export function errorHandler(
     error: 'Internal Server Error',
     message,
     statusCode,
-    ...(process.env.NODE_ENV !== 'production' && { stack: error.stack }),
+    ...(nodeEnv !== 'production' && { stack: error.stack }),
   });
 }
 
@@ -190,7 +191,7 @@ export function createErrorResponse(
 }
 
 // Utility function to handle async route errors
-export function asyncHandler(fn: Function) {
+export function asyncHandler(fn: (request: FastifyRequest, reply: FastifyReply) => Promise<any>) {
   return (request: FastifyRequest, reply: FastifyReply) => {
     Promise.resolve(fn(request, reply)).catch((error) => {
       errorHandler(error, request, reply);

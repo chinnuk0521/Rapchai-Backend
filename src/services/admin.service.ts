@@ -174,14 +174,14 @@ export class AdminService {
       const event = await prisma.event.create({
         data: {
           title: data.title,
-          description: data.description,
+          description: data.description || null,
           startAt: new Date(data.startAt),
           endAt: data.endAt ? new Date(data.endAt) : null,
-          imageUrl: data.imageUrl,
-          location: data.location,
-          externalUrl: data.externalUrl,
-          maxCapacity: data.maxCapacity,
-          pricePaise: data.pricePaise,
+          imageUrl: data.imageUrl || null,
+          location: data.location || null,
+          externalUrl: data.externalUrl || null,
+          maxCapacity: data.maxCapacity || null,
+          pricePaise: data.pricePaise || null,
         },
         include: {
           bookings: true,
@@ -541,6 +541,9 @@ export class AdminService {
       const media = await prisma.media.create({
         data: {
           url: `uploads/${data.filename}`,
+          filename: data.filename,
+          mimeType: data.mimetype,
+          size: data.size || 0,
           caption: data.filename,
           type: data.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
         },

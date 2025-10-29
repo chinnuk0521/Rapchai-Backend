@@ -22,7 +22,7 @@ async function healthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -64,7 +64,7 @@ async function healthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     const startTime = Date.now();
     
     // Check services
@@ -135,7 +135,7 @@ async function healthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     const errors: string[] = [];
     
     // Check database
@@ -180,7 +180,7 @@ async function healthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     return reply.send({
       status: 'alive',
       timestamp: new Date().toISOString(),
@@ -199,7 +199,7 @@ async function healthRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     const memoryUsage = process.memoryUsage();
     const cpuUsage = process.cpuUsage();
     

@@ -118,8 +118,8 @@ export class MenuService {
         data: {
           name: data.name,
           slug: data.slug,
-          description: data.description,
-          imageUrl: data.imageUrl,
+          description: data.description || null,
+          imageUrl: data.imageUrl || null,
           sortOrder: data.sortOrder,
         },
         include: {
@@ -260,14 +260,14 @@ export class MenuService {
           const menuItem = await prisma.menuItem.create({
             data: {
               name: item.name,
-              description: item.description || '',
+              description: item.description || null,
               pricePaise: Math.round(parseFloat(item.price) * 100), // Convert to paise
-              imageUrl: item.imageUrl || '',
+              imageUrl: item.imageUrl || null,
               isVeg: item.isVeg === 'true' || item.isVeg === true,
               isAvailable: item.isAvailable === 'true' || item.isAvailable === true,
               categoryId: category.id,
-              calories: item.calories ? parseInt(item.calories) : undefined,
-              prepTime: item.prepTime ? parseInt(item.prepTime) : undefined,
+              calories: item.calories ? parseInt(item.calories) : null,
+              prepTime: item.prepTime ? parseInt(item.prepTime) : null,
             },
           });
 
@@ -404,9 +404,9 @@ export class MenuService {
       const item = await prisma.menuItem.create({
         data: {
           name: data.name,
-          description: data.description,
+          description: data.description || null,
           pricePaise: data.pricePaise,
-          imageUrl: data.imageUrl,
+          imageUrl: data.imageUrl || null,
           isVeg: data.isVeg,
           isAvailable: data.isAvailable,
           categoryId: data.categoryId,

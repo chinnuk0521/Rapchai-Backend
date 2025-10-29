@@ -42,10 +42,10 @@ export class OrderService {
         totalPaise += itemTotal;
 
         return {
-          menuItemId: item.menuItemId,
+          menuItem: { connect: { id: item.menuItemId } },
           quantity: item.quantity,
           unitPaise: menuItem.pricePaise,
-          notes: item.notes,
+          notes: item.notes || null,
         };
       });
 
@@ -392,7 +392,7 @@ export class OrderService {
         where: { id },
         data: { 
           status: 'CANCELLED',
-          cancellationReason: reason,
+          notes: reason ? `Cancelled: ${reason}` : undefined,
         },
         include: {
           items: {

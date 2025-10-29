@@ -133,7 +133,7 @@ async function adminRoutes(fastify: FastifyInstance) {
   // Get all categories
   fastify.get('/categories', {
     preHandler: [adminMiddleware],
-  }, asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
+  }, asyncHandler(async (_request: FastifyRequest, reply: FastifyReply) => {
     const result = await AdminService.getAllCategories();
     return reply.send({ categories: result });
   }));
