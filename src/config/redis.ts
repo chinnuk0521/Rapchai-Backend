@@ -7,29 +7,24 @@ export const redis = new Redis(env.REDIS_URL, {
   maxRetriesPerRequest: null,
   lazyConnect: true,
   connectTimeout: 5000,
-  retryDelayOnClusterDown: 300,
   enableOfflineQueue: false,
 });
   
 export const pubRedis = new Redis(env.REDIS_URL, {
   ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
-  retryDelayOnFailover: 100,
   enableReadyCheck: false,
   maxRetriesPerRequest: null,
   lazyConnect: true,
   connectTimeout: 5000,
-  retryDelayOnClusterDown: 300,
   enableOfflineQueue: false,
 });
 
 export const subRedis = new Redis(env.REDIS_URL, {
   ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
-  retryDelayOnFailover: 100,
   enableReadyCheck: false,
   maxRetriesPerRequest: null,
   lazyConnect: true,
   connectTimeout: 5000,
-  retryDelayOnClusterDown: 300,
   enableOfflineQueue: false,
 });
 
@@ -41,8 +36,8 @@ export async function connectRedis(): Promise<void> {
       subRedis.connect(),
     ]);
     console.log('✅ Redis connected successfully');
-  } catch (error) {
-    console.warn('⚠️ Redis connection failed, continuing without Redis:', error.message);
+  } catch (error: any) {
+    console.warn('⚠️ Redis connection failed, continuing without Redis:', error?.message || error);
     // Don't throw error, just log warning
   }
 }
