@@ -1,6 +1,28 @@
-// Register tsconfig-paths FIRST before any other imports
-// This must be at the top to handle path aliases at runtime
-require('tsconfig-paths/register');
+// Manually configure path aliases for runtime resolution
+// This is needed because tsconfig.json might not be available in Vercel runtime
+const tsConfigPaths = require('tsconfig-paths');
+const path = require('path');
+
+// Get the project root (two levels up from api/index.ts)
+const projectRoot = path.resolve(__dirname, '..');
+
+// Manually register path aliases based on tsconfig.json paths
+tsConfigPaths.register({
+  baseUrl: path.join(projectRoot, 'src'),
+  paths: {
+    '@/*': ['*'],
+    '@/config/*': ['config/*'],
+    '@/controllers/*': ['controllers/*'],
+    '@/middleware/*': ['middleware/*'],
+    '@/routes/*': ['routes/*'],
+    '@/services/*': ['services/*'],
+    '@/schemas/*': ['schemas/*'],
+    '@/utils/*': ['utils/*'],
+    '@/types/*': ['types/*'],
+    '@/jobs/*': ['jobs/*'],
+    '@/plugins/*': ['plugins/*'],
+  },
+});
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createApp } from '../src/app.js';
