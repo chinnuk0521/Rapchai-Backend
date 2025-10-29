@@ -2,8 +2,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 // Load environment variables (Vercel provides them, but this ensures they're available)
 import 'dotenv/config';
-import { createApp } from '../dist/app.js';
-import { connectDatabase } from '../dist/config/index.js';
+
+// Use lazy imports to handle module-level errors gracefully
+// These will be loaded dynamically when needed
+let createAppModule: any = null;
+let configModule: any = null;
 
 // Global app instance for serverless (persists across invocations)
 let appInstance: any = null;
@@ -13,7 +16,10 @@ let initializationError: Error | null = null;
 const MAX_INIT_RETRIES = 3;
 const INIT_TIMEOUT_MS = 10000; // 10 seconds timeout for initialization
 
-async function connectDatabaseWithRetry(retries = MAX_INIT_RETRIES): Promise<void> {
+async function connectDatabaseWithRetry(
+  connectDatabaseFn: () => Promise<void>, 
+  retries = MAX_INIT_RETRIES
+): Promise<void> {
   let lastError: Error | null = null;
   
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -21,7 +27,7 @@ async function connectDatabaseWithRetry(retries = MAX_INIT_RETRIES): Promise<voi
       console.log(`Database connection attempt ${attempt}/${retries}...`);
       
       // Add timeout to prevent hanging indefinitely
-      const connectionPromise = connectDatabase();
+      const connectionPromise = connectDatabaseFn();
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Database connection timeout')), INIT_TIMEOUT_MS);
       });
@@ -49,7 +55,7 @@ async function connectDatabaseWithRetry(retries = MAX_INIT_RETRIES): Promise<voi
   throw lastError || new Error('Database connection failed after all retries');
 }
 
-async function getApp() {
+async function getApp(createAppFn: (options?: any) => Promise<any>, connectDatabaseFn: () => Promise<void>) {
   // If we have a cached instance, return it
   if (appInstance) {
     return appInstance;
@@ -84,12 +90,12 @@ async function getApp() {
     try {
       // Connect database with retry logic
       if (!isDatabaseConnected) {
-        await connectDatabaseWithRetry();
+        await connectDatabaseWithRetry(connectDatabaseFn);
       }
       
       // Create Fastify app instance
       console.log('Creating Fastify app...');
-      appInstance = await createApp({
+      appInstance = await createAppFn({
         logger: false, // Disable logger in serverless
       });
 
@@ -148,8 +154,45 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.status(status).json(errorResponse);
   };
 
+  // Lazy-load modules using dynamic import to catch module-level errors
   try {
-    const fastifyApp = await getApp();
+    if (!createAppModule) {
+      createAppModule = await import('../dist/app.js');
+    }
+    if (!configModule) {
+      configModule = await import('../dist/config/index.js');
+    }
+  } catch (importError: any) {
+    console.error('Failed to load modules:', importError);
+    console.error('Error stack:', importError?.stack);
+    
+    // Check if it's an environment variable error
+    const errorMessage = importError?.message || String(importError);
+    if (errorMessage.includes('Environment validation failed') || 
+        errorMessage.includes('DATABASE_URL') || 
+        errorMessage.includes('JWT_SECRET')) {
+      sendError(503, {
+        message: 'Configuration error: Missing or invalid environment variables',
+        details: 'Please check Vercel environment variables: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET',
+        hint: 'Go to Vercel Dashboard → Your Project → Settings → Environment Variables',
+        originalError: errorMessage.split('\n')[0], // First line only
+      });
+      return;
+    }
+    
+    sendError(500, {
+      message: 'Failed to initialize application',
+      details: errorMessage.split('\n')[0],
+      hint: 'Check Vercel deployment logs for module import errors',
+    });
+    return;
+  }
+  
+  const createApp = createAppModule.createApp;
+  const connectDatabase = configModule.connectDatabase;
+
+  try {
+    const fastifyApp = await getApp(createApp, connectDatabase);
     
     // Build the full URL path - handle Vercel's path format
     let url = req.url || '/';
