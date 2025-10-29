@@ -14,7 +14,7 @@ import swaggerUi from '@fastify/swagger-ui';
 // Import routes
 import authRoutes from '@/routes/auth.routes.js';
 import menuRoutes from '@/routes/menu.routes.js';
-import orderRoutes from '@/routes/order.routes';
+import orderRoutes from '@/routes/order.routes.js';
 import adminRoutes from '@/routes/admin.routes.js';
 import eventsRoutes from '@/routes/events.routes.js';
 import healthRoutes from '@/routes/health.routes.js';

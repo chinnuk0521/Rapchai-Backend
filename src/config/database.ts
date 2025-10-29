@@ -7,7 +7,7 @@ declare global {
 }
 
 export const prisma = globalThis.__prisma || new PrismaClient({
-  log: env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+  log: env['NODE_ENV'] === 'development' ? ['query', 'error', 'warn'] : ['error'],
   datasources: {
     db: {
       url: env.DATABASE_URL,
@@ -15,7 +15,7 @@ export const prisma = globalThis.__prisma || new PrismaClient({
   },
 });
 
-if (env.NODE_ENV !== 'production') {
+if (env['NODE_ENV'] !== 'production') {
   globalThis.__prisma = prisma;
 }
 

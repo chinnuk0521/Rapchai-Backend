@@ -20,16 +20,18 @@ export interface RefreshTokenPayload {
 
 export class JWTService {
   static generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
-    return jwt.sign(payload, env.JWT_SECRET, {
-      expiresIn: env.JWT_EXPIRES_IN,
+    // @ts-ignore - jsonwebtoken types are problematic
+    return jwt.sign(payload, env.JWT_SECRET as string, {
+      expiresIn: env.JWT_EXPIRES_IN as string,
       issuer: 'rapchai-api',
       audience: 'rapchai-client',
     });
   }
 
   static generateRefreshToken(payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>): string {
-    return jwt.sign(payload, env.JWT_REFRESH_SECRET, {
-      expiresIn: env.JWT_REFRESH_EXPIRES_IN,
+    // @ts-ignore - jsonwebtoken types are problematic
+    return jwt.sign(payload, env.JWT_REFRESH_SECRET as string, {
+      expiresIn: env.JWT_REFRESH_EXPIRES_IN as string,
       issuer: 'rapchai-api',
       audience: 'rapchai-client',
     });
