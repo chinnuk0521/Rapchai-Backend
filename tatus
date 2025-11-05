@@ -312,3 +312,46 @@
  TAB ...................................... Complete filename & cycle.
  SHIFT-TAB ...................... ESC-TAB   Complete filename & reverse cycle.
  ctrl-L ................................... Complete filename, list all.
+warning: in the working copy of 'src/generated/prisma/browser.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/client.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/commonInputTypes.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/enums.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/internal/class.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/internal/prismaNamespace.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/internal/prismaNamespaceBrowser.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/Account.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/Booking.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/Category.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/Event.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/Media.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/MenuItem.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/Order.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/OrderItem.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/RefreshToken.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/Session.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/SystemSettings.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/User.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/generated/prisma/models/VerificationToken.ts', LF will be replaced by CRLF the next time Git touches it
+src/generated/prisma/browser.ts
+src/generated/prisma/client.ts
+src/generated/prisma/commonInputTypes.ts
+src/generated/prisma/enums.ts
+src/generated/prisma/internal/class.ts
+src/generated/prisma/internal/prismaNamespace.ts
+src/generated/prisma/internal/prismaNamespaceBrowser.ts
+src/generated/prisma/models.ts
+src/generated/prisma/models/Account.ts
+src/generated/prisma/models/Booking.ts
+src/generated/prisma/models/Category.ts
+src/generated/prisma/models/Event.ts
+src/generated/prisma/models/Media.ts
+src/generated/prisma/models/MenuItem.ts
+src/generated/prisma/models/Order.ts
+src/generated/prisma/models/OrderItem.ts
+src/generated/prisma/models/RefreshToken.ts
+src/generated/prisma/models/Session.ts
+src/generated/prisma/models/SystemSettings.ts
+src/generated/prisma/models/User.ts
+src/generated/prisma/models/VerificationToken.ts
+tsconfig.json
