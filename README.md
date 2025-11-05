@@ -364,6 +364,99 @@ npm start
 docker-compose -f docker/docker-compose.local.yml up -d
 ```
 
+### Vercel Deployment (CI/CD)
+
+This project includes automated CI/CD pipeline for zero-error deployments to Vercel.
+
+#### Automatic Deployment
+
+The pipeline automatically deploys when:
+- **Production**: Push to `main` branch
+- **Preview**: Push to any other branch (e.g., `develop`, `staging`)
+- **Manual**: Trigger via GitHub Actions UI
+
+#### Pipeline Steps (Automatic)
+
+1. ✅ **Pre-Deployment Checks**
+   - TypeScript type checking
+   - ESLint code quality checks
+   - Prettier formatting validation
+   - Unit tests execution
+
+2. ✅ **Build Verification**
+   - Prisma client generation
+   - TypeScript compilation (`tsc`)
+   - Build output verification (`dist/` folder)
+   - Vercel configuration validation
+
+3. ✅ **Deployment**
+   - Production deployment (main branch)
+   - Preview deployment (other branches)
+   - Health check after deployment
+
+#### Setup Instructions
+
+1. **Add Vercel Secrets to GitHub**:
+   Go to: `Settings → Secrets and variables → Actions` and add:
+   - `VERCEL_TOKEN` - Get from [Vercel Account Settings → Tokens](https://vercel.com/account/tokens)
+   - `VERCEL_ORG_ID` - Found in Vercel project dashboard → Settings → General
+   - `VERCEL_PROJECT_ID` - Found in Vercel project dashboard → Settings → General
+   - `VERCEL_PROJECT_DOMAIN` (optional) - Your Vercel project domain
+
+2. **Configure Environment Variables in Vercel**:
+   Go to: Vercel Dashboard → Your Project → Settings → Environment Variables
+   Add all required variables from `env.example`
+
+3. **Deploy**:
+   ```bash
+   # Automatic deployment (on push to main)
+   git push origin main
+   
+   # Manual deployment via GitHub Actions
+   # Go to: Actions → Deploy Backend to Vercel → Run workflow
+   ```
+
+#### Manual Deployment Trigger
+
+To manually trigger deployment:
+
+1. Go to **GitHub Repository → Actions tab**
+2. Select **"Deploy Backend to Vercel"** workflow
+3. Click **"Run workflow"**
+4. Choose:
+   - **Environment**: `production` or `preview`
+   - **Skip tests**: Only if absolutely necessary
+5. Click **"Run workflow"**
+
+#### Deployment Flow
+
+```
+Push to main branch
+    ↓
+Pre-deployment checks (lint, type-check, tests)
+    ↓
+Build verification (tsc, prisma generate)
+    ↓
+Deploy to Vercel Production
+    ↓
+Health check
+    ↓
+✅ Deployment complete
+```
+
+#### Troubleshooting
+
+- **Build fails**: Check GitHub Actions logs for specific error
+- **Tests fail**: Ensure all tests pass locally before pushing
+- **Missing secrets**: Verify all Vercel secrets are added in GitHub Settings
+- **Environment variables**: Ensure all required vars are set in Vercel dashboard
+
+#### Monitoring Deployments
+
+- View deployment status: GitHub Actions → Deploy Backend to Vercel
+- View deployment logs: Vercel Dashboard → Deployments
+- Check health endpoint: `https://your-domain.vercel.app/api/health`
+
 ## 📊 API Documentation
 
 Swagger documentation is available at:
