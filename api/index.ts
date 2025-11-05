@@ -9,25 +9,98 @@ import 'dotenv/config';
 
 // CRITICAL: Runtime path alias resolution MUST run before any module imports
 // This ensures @/ paths work even if tsc-alias didn't resolve all paths during build
-// Register paths for both src/ and dist/ to handle Vercel's file structure
+// We use both tsconfig-paths AND a custom Module resolver for maximum compatibility
+
+const path = require('path');
+const fs = require('fs');
+const Module = require('module');
+
+// Get absolute paths for better detection
+const projectRoot = path.resolve(__dirname, '..');
+const possibleBasePaths = [
+  path.join(projectRoot, 'dist'),
+  path.join(projectRoot, 'src'),
+  path.join(__dirname, 'dist'),
+  path.join(__dirname, 'src'),
+  path.resolve('./dist'),
+  path.resolve('./src'),
+  '/var/task/src',  // Vercel's actual runtime location
+  '/var/task/dist'
+];
+
+// Detect where files actually are
+let detectedBasePath = null;
+for (const base of possibleBasePaths) {
+  try {
+    const testPath = path.join(base, 'config', 'env.js');
+    if (fs.existsSync(testPath)) {
+      detectedBasePath = base;
+      console.log(`✅ Detected files in: ${detectedBasePath}`);
+      break;
+    }
+  } catch (e) {
+    // Continue to next path
+  }
+}
+
+// Path mapping configuration
+const pathMapping = {
+  '@': detectedBasePath || path.join(projectRoot, 'src'),
+  '@/config': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'config'),
+  '@/middleware': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'middleware'),
+  '@/routes': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'routes'),
+  '@/services': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'services'),
+  '@/schemas': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'schemas'),
+  '@/utils': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'utils'),
+  '@/types': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'types'),
+  '@/jobs': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'jobs'),
+  '@/plugins': path.join(detectedBasePath || path.join(projectRoot, 'src'), 'plugins')
+};
+
+// Custom module resolver that intercepts ALL require() calls
+const originalResolveFilename = Module._resolveFilename;
+Module._resolveFilename = function(request: string, parent: any, isMain: boolean, options: any) {
+  // If the request starts with @/, resolve it using our path mapping
+  if (request.startsWith('@/')) {
+    // Extract the path after @/
+    const aliasPath = request.substring(2); // Remove '@/'
+    
+    // Try to resolve using detected base path first
+    let resolvedPath = null;
+    for (const base of possibleBasePaths) {
+      try {
+        const candidatePath = path.join(base, aliasPath);
+        // Try with .js extension
+        if (fs.existsSync(candidatePath + '.js')) {
+          resolvedPath = candidatePath + '.js';
+          break;
+        }
+        // Try without extension (for directories with index.js)
+        if (fs.existsSync(candidatePath)) {
+          const indexPath = path.join(candidatePath, 'index.js');
+          if (fs.existsSync(indexPath)) {
+            resolvedPath = indexPath;
+            break;
+          }
+        }
+      } catch (e) {
+        // Continue to next path
+      }
+    }
+    
+    if (resolvedPath) {
+      console.log(`✅ Resolved ${request} → ${resolvedPath}`);
+      return originalResolveFilename.call(this, resolvedPath, parent, isMain, options);
+    }
+  }
+  
+  // Fall back to original resolution
+  return originalResolveFilename.call(this, request, parent, isMain, options);
+};
+
+// Also register with tsconfig-paths as fallback
 try {
   const tsPaths = require('tsconfig-paths');
-  const path = require('path');
-  const fs = require('fs');
-  
-  // Get absolute paths for better detection
-  const projectRoot = path.resolve(__dirname, '..');
-  const possibleBasePaths = [
-    path.join(projectRoot, 'dist'),
-    path.join(projectRoot, 'src'),
-    path.join(__dirname, 'dist'),
-    path.join(__dirname, 'src'),
-    path.resolve('./dist'),
-    path.resolve('./src')
-  ];
-  
-  // Register paths for ALL possible locations (both src/ and dist/)
-  // This ensures path resolution works regardless of where Vercel puts files
   const pathConfig = {
     '@/*': ['*'],
     '@/config/*': ['config/*'],
@@ -41,67 +114,25 @@ try {
     '@/plugins/*': ['plugins/*']
   };
   
-  // Try to detect actual file location
-  let detectedPath = null;
+  // Register for all possible base paths
   for (const base of possibleBasePaths) {
     try {
-      const testPath = path.join(base, 'config', 'env.js');
-      if (fs.existsSync(testPath)) {
-        detectedPath = base;
-        console.log(`✅ Detected files in: ${detectedPath}`);
-        break;
-      }
-    } catch (e) {
-      // Continue to next path
-    }
-  }
-  
-  // Register for detected path (primary)
-  if (detectedPath) {
-    try {
       tsPaths.register({
-        baseUrl: detectedPath,
+        baseUrl: base,
         paths: pathConfig
       });
-      console.log(`✅ Registered paths for: ${detectedPath}`);
+      console.log(`✅ Registered tsconfig-paths for: ${base}`);
     } catch (e) {
-      console.log(`⚠️ Failed to register for ${detectedPath}:`, e?.message);
+      // Multiple registrations might fail, that's okay
     }
   }
   
-  // ALWAYS register for both src/ and dist/ regardless of detection
-  // This ensures paths work even if detection fails or files are in unexpected locations
-  // Vercel might use /var/task/src/ or /var/task/dist/ - we need both
-  const fallbackBases = [
-    path.join(projectRoot, 'src'),
-    path.join(projectRoot, 'dist'),
-    path.resolve(process.cwd(), 'src'),
-    path.resolve(process.cwd(), 'dist'),
-    '/var/task/src',  // Vercel's actual runtime location
-    '/var/task/dist'
-  ];
-  
-  for (const base of fallbackBases) {
-    try {
-      if (!detectedPath || base !== detectedPath) {
-        tsPaths.register({
-          baseUrl: base,
-          paths: pathConfig
-        });
-        console.log(`✅ Registered paths for: ${base}`);
-      }
-    } catch (e) {
-      // Multiple registrations might fail, but we try all to ensure coverage
-      console.log(`⚠️ Could not register for ${base}:`, e?.message);
-    }
-  }
-  
-  console.log('✅ Runtime path alias resolution configured');
+  console.log('✅ tsconfig-paths registered as fallback');
 } catch (e) {
-  // tsconfig-paths not available or failed
-  console.error('❌ Failed to setup runtime path resolution:', e?.message || e);
-  console.error('Stack:', e?.stack);
+  console.log('⚠️ tsconfig-paths not available, using custom resolver only');
 }
+
+console.log('✅ Runtime path alias resolution configured (custom resolver + tsconfig-paths)');
 
 // Use lazy imports to handle module-level errors gracefully
 // These will be loaded dynamically when needed
