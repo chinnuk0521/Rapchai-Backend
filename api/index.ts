@@ -7,31 +7,48 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 // Load environment variables (Vercel provides them, but this ensures they're available)
 import 'dotenv/config';
 
-// Runtime path alias resolution fallback (in case tsc-alias didn't resolve all paths)
-// This ensures @/ paths work even if some paths weren't resolved during build
-// Note: This is a fallback - tsc-alias should resolve paths during build
+// CRITICAL: Runtime path alias resolution MUST run before any module imports
+// This ensures @/ paths work even if tsc-alias didn't resolve all paths during build
+// Register paths for both src/ and dist/ to handle Vercel's file structure
 try {
   const tsPaths = require('tsconfig-paths');
   const path = require('path');
   const fs = require('fs');
   
-  // Detect where files actually are (dist/ or src/)
+  // Get absolute paths for better detection
+  const projectRoot = path.resolve(__dirname, '..');
   const possibleBasePaths = [
-    path.join(__dirname, '..', 'dist'),
-    path.join(__dirname, '..', 'src'),
+    path.join(projectRoot, 'dist'),
+    path.join(projectRoot, 'src'),
     path.join(__dirname, 'dist'),
     path.join(__dirname, 'src'),
-    './dist',
-    './src'
+    path.resolve('./dist'),
+    path.resolve('./src')
   ];
   
-  let basePath = './dist'; // Default
+  // Register paths for ALL possible locations (both src/ and dist/)
+  // This ensures path resolution works regardless of where Vercel puts files
+  const pathConfig = {
+    '@/*': ['*'],
+    '@/config/*': ['config/*'],
+    '@/middleware/*': ['middleware/*'],
+    '@/routes/*': ['routes/*'],
+    '@/services/*': ['services/*'],
+    '@/schemas/*': ['schemas/*'],
+    '@/utils/*': ['utils/*'],
+    '@/types/*': ['types/*'],
+    '@/jobs/*': ['jobs/*'],
+    '@/plugins/*': ['plugins/*']
+  };
+  
+  // Try to detect actual file location
+  let detectedPath = null;
   for (const base of possibleBasePaths) {
     try {
-      const testPath = path.resolve(base, 'config', 'env.js');
+      const testPath = path.join(base, 'config', 'env.js');
       if (fs.existsSync(testPath)) {
-        basePath = base;
-        console.log(`✅ Found files in: ${basePath}`);
+        detectedPath = base;
+        console.log(`✅ Detected files in: ${detectedPath}`);
         break;
       }
     } catch (e) {
@@ -39,27 +56,40 @@ try {
     }
   }
   
-  // Register paths for detected folder (runtime fallback)
-  tsPaths.register({
-    baseUrl: basePath,
-    paths: {
-      '@/*': ['*'],
-      '@/config/*': ['config/*'],
-      '@/middleware/*': ['middleware/*'],
-      '@/routes/*': ['routes/*'],
-      '@/services/*': ['services/*'],
-      '@/schemas/*': ['schemas/*'],
-      '@/utils/*': ['utils/*'],
-      '@/types/*': ['types/*'],
-      '@/jobs/*': ['jobs/*'],
-      '@/plugins/*': ['plugins/*']
+  // Register for detected path (primary)
+  if (detectedPath) {
+    try {
+      tsPaths.register({
+        baseUrl: detectedPath,
+        paths: pathConfig
+      });
+      console.log(`✅ Registered paths for: ${detectedPath}`);
+    } catch (e) {
+      console.log(`⚠️ Failed to register for ${detectedPath}:`, e?.message);
     }
-  });
-  console.log(`✅ Runtime path alias fallback registered for: ${basePath}`);
+  }
+  
+  // Also register for both src/ and dist/ as fallback (in case detection fails)
+  // This ensures paths work even if detection doesn't find the right location
+  for (const base of [path.join(projectRoot, 'src'), path.join(projectRoot, 'dist')]) {
+    try {
+      if (base !== detectedPath) {
+        tsPaths.register({
+          baseUrl: base,
+          paths: pathConfig
+        });
+        console.log(`✅ Registered fallback paths for: ${base}`);
+      }
+    } catch (e) {
+      // Multiple registrations might fail, that's okay
+    }
+  }
+  
+  console.log('✅ Runtime path alias resolution configured');
 } catch (e) {
-  // tsconfig-paths not available or failed, that's okay - we rely on tsc-alias
-  console.log('tsconfig-paths fallback not available, using tsc-alias resolved paths');
-  console.log('Error:', e?.message || e);
+  // tsconfig-paths not available or failed
+  console.error('❌ Failed to setup runtime path resolution:', e?.message || e);
+  console.error('Stack:', e?.stack);
 }
 
 // Use lazy imports to handle module-level errors gracefully
