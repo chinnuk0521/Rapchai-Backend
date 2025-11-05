@@ -84,9 +84,12 @@ jobs:
       needs.ci.result == 'success'
     environment:
       name: production
-      url: https://${{ secrets.VERCEL_PROJECT_DOMAIN || 'deployment-url' }}
-    
+      url: ${{ (env.VERCEL_PROJECT_DOMAIN != '' && format('https://{0}', env.VERCEL_PROJECT_DOMAIN)) || 'https://deployment-url' }}
+
     steps:
+      - name: Set VERCEL_PROJECT_DOMAIN env var
+        run: echo "VERCEL_PROJECT_DOMAIN=${{ secrets.VERCEL_PROJECT_DOMAIN }}" >> $GITHUB_ENV
+
       - name: Checkout code
         uses: actions/checkout@v4
 
