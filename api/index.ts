@@ -7,6 +7,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 // Load environment variables (Vercel provides them, but this ensures they're available)
 import 'dotenv/config';
 
+// Runtime path alias resolution fallback (in case tsc-alias didn't resolve all paths)
+// This ensures @/ paths work even if some paths weren't resolved during build
+try {
+  require('tsconfig-paths/register');
+} catch (e) {
+  // tsconfig-paths not available, that's okay - we rely on tsc-alias
+  console.log('tsconfig-paths not available, using tsc-alias resolved paths');
+}
+
 // Use lazy imports to handle module-level errors gracefully
 // These will be loaded dynamically when needed
 let createAppModule: any = null;
