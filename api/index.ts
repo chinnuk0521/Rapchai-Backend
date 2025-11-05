@@ -69,19 +69,30 @@ try {
     }
   }
   
-  // Also register for both src/ and dist/ as fallback (in case detection fails)
-  // This ensures paths work even if detection doesn't find the right location
-  for (const base of [path.join(projectRoot, 'src'), path.join(projectRoot, 'dist')]) {
+  // ALWAYS register for both src/ and dist/ regardless of detection
+  // This ensures paths work even if detection fails or files are in unexpected locations
+  // Vercel might use /var/task/src/ or /var/task/dist/ - we need both
+  const fallbackBases = [
+    path.join(projectRoot, 'src'),
+    path.join(projectRoot, 'dist'),
+    path.resolve(process.cwd(), 'src'),
+    path.resolve(process.cwd(), 'dist'),
+    '/var/task/src',  // Vercel's actual runtime location
+    '/var/task/dist'
+  ];
+  
+  for (const base of fallbackBases) {
     try {
-      if (base !== detectedPath) {
+      if (!detectedPath || base !== detectedPath) {
         tsPaths.register({
           baseUrl: base,
           paths: pathConfig
         });
-        console.log(`✅ Registered fallback paths for: ${base}`);
+        console.log(`✅ Registered paths for: ${base}`);
       }
     } catch (e) {
-      // Multiple registrations might fail, that's okay
+      // Multiple registrations might fail, but we try all to ensure coverage
+      console.log(`⚠️ Could not register for ${base}:`, e?.message);
     }
   }
   

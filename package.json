@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "vercel-build": "prisma generate && tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json",
+    "vercel-build": "prisma generate && tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json && (find src -name '*.js' -type f 2>/dev/null | head -1 > /dev/null && npx tsc-alias -p tsconfig-src-alias.json || echo 'No src/*.js files to process')",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
