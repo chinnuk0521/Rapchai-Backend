@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Vercel)
 
 on:
   push:
@@ -71,7 +71,7 @@ jobs:
           else
             echo "No test script found, skipping tests"
           fi
-        continue-on-error: true
+        continue-on-error: false
 
   # Deploy: Only deploy to Vercel on successful CI in main branch
   deploy:
@@ -84,11 +84,9 @@ jobs:
       needs.ci.result == 'success'
     environment:
       name: production
-      url: ${{ (env.VERCEL_PROJECT_DOMAIN != '' && format('https://{0}', env.VERCEL_PROJECT_DOMAIN)) || 'https://deployment-url' }}
-
+      url: https://your-project.vercel.app
+    
     steps:
-      - name: Set VERCEL_PROJECT_DOMAIN env var
-        run: echo "VERCEL_PROJECT_DOMAIN=${{ secrets.VERCEL_PROJECT_DOMAIN }}" >> $GITHUB_ENV
 
       - name: Checkout code
         uses: actions/checkout@v4

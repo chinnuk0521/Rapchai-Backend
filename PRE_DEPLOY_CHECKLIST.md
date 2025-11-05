@@ -2,10 +2,14 @@
 
 ## GitHub Secrets Configuration ✅
 
-Your GitHub secrets have been configured:
-- ✅ `VERCEL_TOKEN`: ZMaZkvdlamRoymPUJu8THvaJ
-- ✅ `VERCEL_ORG_ID`: chinnuk0521s-projects  
-- ✅ `VERCEL_PROJECT_ID`: prj_tPS31wFt2N6LHIY8FODqKKOUiYkJ
+**⚠️ IMPORTANT**: Configure these secrets in GitHub Repository Settings → Secrets and variables → Actions
+
+Your GitHub secrets should be configured:
+- ✅ `VERCEL_TOKEN`: `<your-vercel-token>` (Get from Vercel Account Settings → Tokens)
+- ✅ `VERCEL_ORG_ID`: `<your-org-id>` (Found in Vercel project settings → General)
+- ✅ `VERCEL_PROJECT_ID`: `<your-project-id>` (Found in Vercel project settings → General)
+
+**🔒 Security Note**: Never commit actual credentials to the repository. Always use GitHub Secrets.
 
 ## ⚠️ CRITICAL: Vercel Environment Variables
 
