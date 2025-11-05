@@ -51,7 +51,7 @@ docs
 .github/workflows/ci.yml
 
 # Build artifacts (will be generated on Vercel)
-dist
+# Note: dist/ is NOT ignored - it's needed for serverless functions
 *.tsbuildinfo
 
 # Misc

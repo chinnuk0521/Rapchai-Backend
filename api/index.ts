@@ -185,21 +185,33 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (!createAppModule) {
       console.log('Loading app module from dist/app.js...');
-      // Try multiple possible paths
+      console.log('Current working directory:', process.cwd());
+      console.log('__dirname:', __dirname);
+      // Try multiple possible paths - Vercel might structure files differently
       // Dynamic imports from dist folder (runtime only, not available at compile time)
       try {
         createAppModule = await import('../dist/app.js') as any;
+        console.log('✅ Loaded from ../dist/app.js');
       } catch (e1: any) {
-          try {
-            createAppModule = await import('./dist/app.js') as any;
+        try {
+          createAppModule = await import('./dist/app.js') as any;
+          console.log('✅ Loaded from ./dist/app.js');
         } catch (e2: any) {
           try {
             createAppModule = await import('../../dist/app.js') as any;
+            console.log('✅ Loaded from ../../dist/app.js');
           } catch (e3: any) {
-            const err1 = e1 instanceof Error ? e1.message : String(e1);
-            const err2 = e2 instanceof Error ? e2.message : String(e2);
-            const err3 = e3 instanceof Error ? e3.message : String(e3);
-            throw new Error(`Failed to find app.js in any location. Errors: ${err1}, ${err2}, ${err3}`);
+            // Try looking in src/ as fallback (Vercel might compile from src/)
+            try {
+              createAppModule = await import('../src/app.js') as any;
+              console.log('✅ Loaded from ../src/app.js (Vercel compiled)');
+            } catch (e4: any) {
+              const err1 = e1 instanceof Error ? e1.message : String(e1);
+              const err2 = e2 instanceof Error ? e2.message : String(e2);
+              const err3 = e3 instanceof Error ? e3.message : String(e3);
+              const err4 = e4 instanceof Error ? e4.message : String(e4);
+              throw new Error(`Failed to find app.js. Tried: ../dist/app.js, ./dist/app.js, ../../dist/app.js, ../src/app.js. Errors: ${err1}, ${err2}, ${err3}, ${err4}`);
+            }
           }
         }
       }
