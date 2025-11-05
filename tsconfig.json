@@ -58,5 +58,9 @@
   ],
   "ts-node": {
     "require": ["tsconfig-paths/register"]
+  },
+  "tsc-alias": {
+    "verbose": true,
+    "resolveFullPaths": true
   }
 }
