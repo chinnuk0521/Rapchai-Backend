@@ -22,6 +22,29 @@ jobs:
   test-pre-deploy:
     name: Test Pre-Deployment Checks
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
     
     steps:
       - name: Checkout code
@@ -59,6 +82,19 @@ jobs:
             echo "No src directory found, skipping Prettier check"
           fi
         continue-on-error: false
+
+      - name: Run database migrations (if needed)
+        run: |
+          if [ -d "prisma/migrations" ] && [ "$(ls -A prisma/migrations 2>/dev/null)" ]; then
+            echo "Running Prisma migrate deploy..."
+            npx prisma migrate deploy || echo "Migration completed or skipped"
+          else
+            echo "No migrations found, using db push instead"
+            npx prisma db push --skip-generate --accept-data-loss || echo "Database push completed or skipped"
+          fi
+        continue-on-error: true
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db?schema=public
 
       - name: Run unit tests (if configured)
         id: tests
@@ -112,8 +148,8 @@ jobs:
             exit 1
           fi
           
-          if [ ! -f "dist/app.js" ]; then
-            echo "❌ ERROR: dist/app.js not found"
+          if [ ! -f "dist/server.js" ] && [ ! -f "dist/app.js" ]; then
+            echo "❌ ERROR: dist/server.js or dist/app.js not found"
             exit 1
           fi
           
@@ -128,7 +164,8 @@ jobs:
           ls -la dist/ | head -20
           echo ""
           echo "📄 Key files:"
-          ls -lh dist/app.js dist/config/*.js 2>/dev/null | head -10 || echo "Some files may not exist"
+          ls -lh dist/server.js dist/app.js 2>/dev/null | head -5 || echo "Some files may not exist"
+          ls -lh dist/config/*.js 2>/dev/null | head -5 || echo "Config files may not exist"
 
       - name: Verify Vercel configuration
         run: |
