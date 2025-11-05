@@ -157,14 +157,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Lazy-load modules using dynamic import to catch module-level errors
   try {
     if (!createAppModule) {
-      createAppModule = await import('../dist/app.js');
+      console.log('Loading app module from dist/app.js...');
+      // Try multiple possible paths
+      try {
+        createAppModule = await import('../dist/app.js');
+      } catch (e1) {
+        try {
+          createAppModule = await import('./dist/app.js');
+        } catch (e2) {
+          try {
+            createAppModule = await import('../../dist/app.js');
+          } catch (e3) {
+            throw new Error(`Failed to find app.js in any location. Errors: ${e1?.message || e1}, ${e2?.message || e2}, ${e3?.message || e3}`);
+          }
+        }
+      }
+      console.log('✅ App module loaded successfully');
     }
     if (!configModule) {
-      configModule = await import('../dist/config/index.js');
+      console.log('Loading config module from dist/config/index.js...');
+      try {
+        configModule = await import('../dist/config/index.js');
+      } catch (e1) {
+        try {
+          configModule = await import('./dist/config/index.js');
+        } catch (e2) {
+          try {
+            configModule = await import('../../dist/config/index.js');
+          } catch (e3) {
+            throw new Error(`Failed to find config/index.js in any location. Errors: ${e1?.message || e1}, ${e2?.message || e2}, ${e3?.message || e3}`);
+          }
+        }
+      }
+      console.log('✅ Config module loaded successfully');
     }
   } catch (importError: any) {
-    console.error('Failed to load modules:', importError);
+    console.error('❌ Failed to load modules:', importError);
+    console.error('Error message:', importError?.message);
     console.error('Error stack:', importError?.stack);
+    console.error('Current working directory:', process.cwd());
+    console.error('__dirname equivalent:', import.meta.url);
     
     // Check if it's an environment variable error
     const errorMessage = importError?.message || String(importError);
@@ -183,7 +215,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     sendError(500, {
       message: 'Failed to initialize application',
       details: errorMessage.split('\n')[0],
-      hint: 'Check Vercel deployment logs for module import errors',
+      hint: 'Check Vercel deployment logs for module import errors. Ensure vercel-build completed successfully.',
+      buildInfo: 'Verify that npm run vercel-build completed without errors in Vercel build logs',
     });
     return;
   }
