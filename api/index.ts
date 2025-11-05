@@ -159,16 +159,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!createAppModule) {
       console.log('Loading app module from dist/app.js...');
       // Try multiple possible paths
+      // Dynamic imports from dist folder (runtime only, not available at compile time)
       try {
-        createAppModule = await import('../dist/app.js');
-      } catch (e1) {
-        try {
-          createAppModule = await import('./dist/app.js');
-        } catch (e2) {
+        createAppModule = await import('../dist/app.js') as any;
+      } catch (e1: any) {
           try {
-            createAppModule = await import('../../dist/app.js');
-          } catch (e3) {
-            throw new Error(`Failed to find app.js in any location. Errors: ${e1?.message || e1}, ${e2?.message || e2}, ${e3?.message || e3}`);
+            createAppModule = await import('./dist/app.js') as any;
+        } catch (e2: any) {
+          try {
+            createAppModule = await import('../../dist/app.js') as any;
+          } catch (e3: any) {
+            const err1 = e1 instanceof Error ? e1.message : String(e1);
+            const err2 = e2 instanceof Error ? e2.message : String(e2);
+            const err3 = e3 instanceof Error ? e3.message : String(e3);
+            throw new Error(`Failed to find app.js in any location. Errors: ${err1}, ${err2}, ${err3}`);
           }
         }
       }
@@ -176,16 +180,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!configModule) {
       console.log('Loading config module from dist/config/index.js...');
+      // Dynamic imports from dist folder (runtime only, not available at compile time)
       try {
-        configModule = await import('../dist/config/index.js');
-      } catch (e1) {
+        configModule = await import('../dist/config/index.js') as any;
+      } catch (e1: any) {
         try {
-          configModule = await import('./dist/config/index.js');
-        } catch (e2) {
+          configModule = await import('./dist/config/index.js') as any;
+        } catch (e2: any) {
           try {
-            configModule = await import('../../dist/config/index.js');
-          } catch (e3) {
-            throw new Error(`Failed to find config/index.js in any location. Errors: ${e1?.message || e1}, ${e2?.message || e2}, ${e3?.message || e3}`);
+            configModule = await import('../../dist/config/index.js') as any;
+          } catch (e3: any) {
+            const err1 = e1 instanceof Error ? e1.message : String(e1);
+            const err2 = e2 instanceof Error ? e2.message : String(e2);
+            const err3 = e3 instanceof Error ? e3.message : String(e3);
+            throw new Error(`Failed to find config/index.js in any location. Errors: ${err1}, ${err2}, ${err3}`);
           }
         }
       }
@@ -196,7 +204,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('Error message:', importError?.message);
     console.error('Error stack:', importError?.stack);
     console.error('Current working directory:', process.cwd());
-    console.error('__dirname equivalent:', import.meta.url);
+    // Note: import.meta.url is ESM-only, but we're using CommonJS
+    // Using __filename equivalent for Node.js
+    console.error('Module location:', __filename || 'unknown');
     
     // Check if it's an environment variable error
     const errorMessage = importError?.message || String(importError);
