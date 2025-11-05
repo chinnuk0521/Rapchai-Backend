@@ -9,11 +9,25 @@ import 'dotenv/config';
 
 // Runtime path alias resolution fallback (in case tsc-alias didn't resolve all paths)
 // This ensures @/ paths work even if some paths weren't resolved during build
+// Note: This is a fallback - tsc-alias should resolve paths during build
 try {
-  require('tsconfig-paths/register');
+  const tsPaths = require('tsconfig-paths');
+  // Register paths for dist/ folder (runtime fallback)
+  tsPaths.register({
+    baseUrl: './dist',
+    paths: {
+      '@/*': ['*'],
+      '@/config/*': ['config/*'],
+      '@/middleware/*': ['middleware/*'],
+      '@/routes/*': ['routes/*'],
+      '@/services/*': ['services/*'],
+      '@/utils/*': ['utils/*']
+    }
+  });
+  console.log('✅ Runtime path alias fallback registered');
 } catch (e) {
-  // tsconfig-paths not available, that's okay - we rely on tsc-alias
-  console.log('tsconfig-paths not available, using tsc-alias resolved paths');
+  // tsconfig-paths not available or failed, that's okay - we rely on tsc-alias
+  console.log('tsconfig-paths fallback not available, using tsc-alias resolved paths');
 }
 
 // Use lazy imports to handle module-level errors gracefully
