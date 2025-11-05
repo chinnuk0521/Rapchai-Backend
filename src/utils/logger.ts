@@ -1,5 +1,5 @@
-import pino from 'pino';
-import { env } from '@/config/env.js';
+import pino from "pino";
+import { env } from "@/config/env.js";
 
 const loggerConfig: any = {
   level: env.LOG_LEVEL,
@@ -11,13 +11,13 @@ const loggerConfig: any = {
   timestamp: pino.stdTimeFunctions.isoTime,
 };
 
-if (env.LOG_PRETTY_PRINT && env.NODE_ENV === 'development') {
+if (env.LOG_PRETTY_PRINT && env.NODE_ENV === "development") {
   loggerConfig.transport = {
-    target: 'pino-pretty',
+    target: "pino-pretty",
     options: {
       colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
+      translateTime: "SYS:standard",
+      ignore: "pid,hostname",
     },
   };
 }
@@ -39,41 +39,57 @@ export const loggers = {
 export function createRequestLogger() {
   return {
     request: (request: any) => {
-      logger.info({
-        method: request.method,
-        url: request.url,
-        headers: request.headers,
-        remoteAddress: request.ip,
-      }, 'Incoming request');
+      logger.info(
+        {
+          method: request.method,
+          url: request.url,
+          headers: request.headers,
+          remoteAddress: request.ip,
+        },
+        "Incoming request",
+      );
     },
     response: (request: any, reply: any) => {
-      logger.info({
-        method: request.method,
-        url: request.url,
-        statusCode: reply.statusCode,
-        responseTime: reply.getResponseTime(),
-      }, 'Request completed');
+      logger.info(
+        {
+          method: request.method,
+          url: request.url,
+          statusCode: reply.statusCode,
+          responseTime: reply.getResponseTime(),
+        },
+        "Request completed",
+      );
     },
   };
 }
 
 // Error logging helper
 export function logError(error: Error, context?: any) {
-  logger.error({
-    error: {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
+  logger.error(
+    {
+      error: {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      },
+      context,
     },
-    context,
-  }, 'Application error');
+    "Application error",
+  );
 }
 
 // Performance logging helper
-export function logPerformance(operation: string, duration: number, metadata?: any) {
-  logger.info({
-    operation,
-    duration,
-    metadata,
-  }, 'Performance metric');
+export function logPerformance(
+  operation: string,
+  duration: number,
+  metadata?: any,
+) {
+  logger.info(
+    {
+      operation,
+      duration,
+      metadata,
+    },
+    "Performance metric",
+  );
 }

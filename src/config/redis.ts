@@ -1,5 +1,5 @@
-import Redis from 'ioredis';
-import { env } from './env.js';
+import Redis from "ioredis";
+import { env } from "./env.js";
 
 export const redis = new Redis(env.REDIS_URL, {
   ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
@@ -9,7 +9,7 @@ export const redis = new Redis(env.REDIS_URL, {
   connectTimeout: 5000,
   enableOfflineQueue: false,
 });
-  
+
 export const pubRedis = new Redis(env.REDIS_URL, {
   ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
   enableReadyCheck: false,
@@ -35,9 +35,12 @@ export async function connectRedis(): Promise<void> {
       pubRedis.connect(),
       subRedis.connect(),
     ]);
-    console.log('✅ Redis connected successfully');
+    console.log("✅ Redis connected successfully");
   } catch (error: any) {
-    console.warn('⚠️ Redis connection failed, continuing without Redis:', error?.message || error);
+    console.warn(
+      "⚠️ Redis connection failed, continuing without Redis:",
+      error?.message || error,
+    );
     // Don't throw error, just log warning
   }
 }
@@ -49,9 +52,9 @@ export async function disconnectRedis(): Promise<void> {
       pubRedis.disconnect(),
       subRedis.disconnect(),
     ]);
-    console.log('✅ Redis disconnected successfully');
+    console.log("✅ Redis disconnected successfully");
   } catch (error) {
-    console.error('❌ Redis disconnection failed:', error);
+    console.error("❌ Redis disconnection failed:", error);
     throw error;
   }
 }
@@ -61,7 +64,7 @@ export async function healthCheckRedis(): Promise<boolean> {
     await redis.ping();
     return true;
   } catch (error) {
-    console.error('❌ Redis health check failed:', error);
+    console.error("❌ Redis health check failed:", error);
     return false;
   }
 }
@@ -73,12 +76,16 @@ export class CacheService {
       const value = await redis.get(key);
       return value ? JSON.parse(value) : null;
     } catch (error) {
-      console.error('Cache get error:', error);
+      console.error("Cache get error:", error);
       return null;
     }
   }
 
-  static async set(key: string, value: any, ttlSeconds?: number): Promise<void> {
+  static async set(
+    key: string,
+    value: any,
+    ttlSeconds?: number,
+  ): Promise<void> {
     try {
       const serialized = JSON.stringify(value);
       if (ttlSeconds) {
@@ -87,7 +94,7 @@ export class CacheService {
         await redis.set(key, serialized);
       }
     } catch (error) {
-      console.error('Cache set error:', error);
+      console.error("Cache set error:", error);
     }
   }
 
@@ -95,7 +102,7 @@ export class CacheService {
     try {
       await redis.del(key);
     } catch (error) {
-      console.error('Cache delete error:', error);
+      console.error("Cache delete error:", error);
     }
   }
 
@@ -104,7 +111,7 @@ export class CacheService {
       const result = await redis.exists(key);
       return result === 1;
     } catch (error) {
-      console.error('Cache exists error:', error);
+      console.error("Cache exists error:", error);
       return false;
     }
   }
@@ -113,7 +120,7 @@ export class CacheService {
     try {
       await redis.flushdb();
     } catch (error) {
-      console.error('Cache flush error:', error);
+      console.error("Cache flush error:", error);
     }
   }
 
@@ -124,7 +131,7 @@ export class CacheService {
         await redis.del(...keys);
       }
     } catch (error) {
-      console.error('Cache delete pattern error:', error);
+      console.error("Cache delete pattern error:", error);
     }
   }
 }

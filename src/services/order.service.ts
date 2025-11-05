@@ -1,18 +1,23 @@
-import { prisma } from '@/config/database.js';
-import { CacheService } from '@/config/redis';
-import { AppError, NotFoundError, ConflictError } from '@/middleware/error.middleware.js';
-import { loggers } from '@/utils/logger.js';
-import { OrderType, OrderStatus, PaymentStatus } from '../generated/prisma/enums';
-import type { 
-  CreateOrderInput, 
-  OrderQueryInput 
-} from '@/schemas/index.js';
+import { prisma } from "@/config/database.js";
+import { CacheService } from "@/config/redis";
+import {
+  AppError,
+  NotFoundError,
+  ConflictError,
+} from "@/middleware/error.middleware.js";
+import { loggers } from "@/utils/logger.js";
+import {
+  OrderType,
+  OrderStatus,
+  PaymentStatus,
+} from "../generated/prisma/enums";
+import type { CreateOrderInput, OrderQueryInput } from "@/schemas/index.js";
 
 export class OrderService {
   static async createOrder(data: CreateOrderInput) {
     try {
       // Validate menu items exist and are available
-      const menuItemIds = data.items.map(item => item.menuItemId);
+      const menuItemIds = data.items.map((item) => item.menuItemId);
       const menuItems = await prisma.menuItem.findMany({
         where: {
           id: { in: menuItemIds },
@@ -27,13 +32,15 @@ export class OrderService {
       });
 
       if (menuItems.length !== menuItemIds.length) {
-        throw new NotFoundError('One or more menu items not found or unavailable');
+        throw new NotFoundError(
+          "One or more menu items not found or unavailable",
+        );
       }
 
       // Calculate total
       let totalPaise = 0;
-      const orderItems = data.items.map(item => {
-        const menuItem = menuItems.find(mi => mi.id === item.menuItemId);
+      const orderItems = data.items.map((item) => {
+        const menuItem = menuItems.find((mi) => mi.id === item.menuItemId);
         if (!menuItem) {
           throw new NotFoundError(`Menu item ${item.menuItemId} not found`);
         }
@@ -51,7 +58,7 @@ export class OrderService {
 
       // Generate unique order number
       const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 9).toUpperCase()}`;
-      
+
       // Create order with items
       const order = await prisma.order.create({
         data: {
@@ -60,11 +67,13 @@ export class OrderService {
           customerPhone: data.customerPhone,
           customerEmail: data.customerEmail,
           tableNumber: data.tableNumber,
-          orderType: data.orderType.toUpperCase().replace(/-/g, '_') as OrderType,
+          orderType: data.orderType
+            .toUpperCase()
+            .replace(/-/g, "_") as OrderType,
           notes: data.notes,
           specialInstructions: data.specialInstructions,
           totalPaise,
-          status: 'PENDING',
+          status: "PENDING",
           items: {
             create: orderItems,
           },
@@ -87,30 +96,30 @@ export class OrderService {
       });
 
       // Clear cache
-      await CacheService.delPattern('orders:*');
+      await CacheService.delPattern("orders:*");
 
-      loggers.info('Order created successfully', { 
-        orderId: order.id, 
-        totalPaise: order.totalPaise 
+      loggers.info("Order created successfully", {
+        orderId: order.id,
+        totalPaise: order.totalPaise,
       });
 
       return order;
     } catch (error: any) {
-      loggers.error('Create order failed:', error);
+      loggers.error("Create order failed:", error);
       throw error;
     }
   }
 
   static async getAllOrders(query: OrderQueryInput) {
     try {
-      const { 
-        page = 1, 
-        limit = 10, 
-        status, 
-        orderType, 
-        paymentStatus, 
-        startDate, 
-        endDate 
+      const {
+        page = 1,
+        limit = 10,
+        status,
+        orderType,
+        paymentStatus,
+        startDate,
+        endDate,
       } = query;
       const skip = (page - 1) * limit;
 
@@ -158,7 +167,7 @@ export class OrderService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.order.count({ where }),
       ]);
@@ -173,7 +182,7 @@ export class OrderService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get all orders failed:', error);
+      loggers.error("Get all orders failed:", error);
       throw error;
     }
   }
@@ -209,7 +218,7 @@ export class OrderService {
       });
 
       if (!order) {
-        throw new NotFoundError('Order not found');
+        throw new NotFoundError("Order not found");
       }
 
       // Cache for 5 minutes
@@ -217,12 +226,16 @@ export class OrderService {
 
       return order;
     } catch (error: any) {
-      loggers.error('Get order by ID failed:', error);
+      loggers.error("Get order by ID failed:", error);
       throw error;
     }
   }
 
-  static async getOrdersByCustomerPhone(phone: string, page: number = 1, limit: number = 10) {
+  static async getOrdersByCustomerPhone(
+    phone: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     try {
       const skip = (page - 1) * limit;
 
@@ -246,7 +259,7 @@ export class OrderService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.order.count({ where: { customerPhone: phone } }),
       ]);
@@ -261,7 +274,7 @@ export class OrderService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get orders by customer phone failed:', error);
+      loggers.error("Get orders by customer phone failed:", error);
       throw error;
     }
   }
@@ -273,21 +286,23 @@ export class OrderService {
       });
 
       if (!order) {
-        throw new NotFoundError('Order not found');
+        throw new NotFoundError("Order not found");
       }
 
       // Validate status transition
       const validTransitions: { [key: string]: string[] } = {
-        PENDING: ['CONFIRMED', 'CANCELLED'],
-        CONFIRMED: ['PREPARING', 'CANCELLED'],
-        PREPARING: ['READY', 'CANCELLED'],
-        READY: ['COMPLETED'],
+        PENDING: ["CONFIRMED", "CANCELLED"],
+        CONFIRMED: ["PREPARING", "CANCELLED"],
+        PREPARING: ["READY", "CANCELLED"],
+        READY: ["COMPLETED"],
         COMPLETED: [],
         CANCELLED: [],
       };
 
       if (!validTransitions[order.status]?.includes(status)) {
-        throw new ConflictError(`Cannot change status from ${order.status} to ${status}`);
+        throw new ConflictError(
+          `Cannot change status from ${order.status} to ${status}`,
+        );
       }
 
       const updatedOrder = await prisma.order.update({
@@ -312,17 +327,17 @@ export class OrderService {
 
       // Clear cache
       await CacheService.del(`order:${id}`);
-      await CacheService.delPattern('orders:*');
+      await CacheService.delPattern("orders:*");
 
-      loggers.info('Order status updated', { 
-        orderId: id, 
-        oldStatus: order.status, 
-        newStatus: status 
+      loggers.info("Order status updated", {
+        orderId: id,
+        oldStatus: order.status,
+        newStatus: status,
       });
 
       return updatedOrder;
     } catch (error: any) {
-      loggers.error('Update order status failed:', error);
+      loggers.error("Update order status failed:", error);
       throw error;
     }
   }
@@ -334,7 +349,7 @@ export class OrderService {
       });
 
       if (!order) {
-        throw new NotFoundError('Order not found');
+        throw new NotFoundError("Order not found");
       }
 
       const updatedOrder = await prisma.order.update({
@@ -359,16 +374,16 @@ export class OrderService {
 
       // Clear cache
       await CacheService.del(`order:${id}`);
-      await CacheService.delPattern('orders:*');
+      await CacheService.delPattern("orders:*");
 
-      loggers.info('Payment status updated', { 
-        orderId: id, 
-        paymentStatus 
+      loggers.info("Payment status updated", {
+        orderId: id,
+        paymentStatus,
       });
 
       return updatedOrder;
     } catch (error: any) {
-      loggers.error('Update payment status failed:', error);
+      loggers.error("Update payment status failed:", error);
       throw error;
     }
   }
@@ -380,22 +395,22 @@ export class OrderService {
       });
 
       if (!order) {
-        throw new NotFoundError('Order not found');
+        throw new NotFoundError("Order not found");
       }
 
       // Check if order can be cancelled
-      if (order.status === 'COMPLETED') {
-        throw new ConflictError('Cannot cancel completed order');
+      if (order.status === "COMPLETED") {
+        throw new ConflictError("Cannot cancel completed order");
       }
 
-      if (order.status === 'CANCELLED') {
-        throw new ConflictError('Order is already cancelled');
+      if (order.status === "CANCELLED") {
+        throw new ConflictError("Order is already cancelled");
       }
 
       const updatedOrder = await prisma.order.update({
         where: { id },
-        data: { 
-          status: 'CANCELLED',
+        data: {
+          status: "CANCELLED",
           notes: reason ? `Cancelled: ${reason}` : undefined,
         },
         include: {
@@ -417,16 +432,16 @@ export class OrderService {
 
       // Clear cache
       await CacheService.del(`order:${id}`);
-      await CacheService.delPattern('orders:*');
+      await CacheService.delPattern("orders:*");
 
-      loggers.info('Order cancelled', { 
-        orderId: id, 
-        reason 
+      loggers.info("Order cancelled", {
+        orderId: id,
+        reason,
       });
 
       return updatedOrder;
     } catch (error: any) {
-      loggers.error('Cancel order failed:', error);
+      loggers.error("Cancel order failed:", error);
       throw error;
     }
   }
@@ -459,12 +474,12 @@ export class OrderService {
           _sum: { totalPaise: true },
         }),
         prisma.order.groupBy({
-          by: ['status'],
+          by: ["status"],
           where,
           _count: { status: true },
         }),
         prisma.order.groupBy({
-          by: ['orderType'],
+          by: ["orderType"],
           where,
           _count: { orderType: true },
         }),
@@ -473,28 +488,28 @@ export class OrderService {
           _avg: { totalPaise: true },
         }),
         prisma.orderItem.groupBy({
-          by: ['menuItemId'],
+          by: ["menuItemId"],
           where: {
             order: where,
           },
           _sum: { quantity: true },
-          orderBy: { _sum: { quantity: 'desc' } },
+          orderBy: { _sum: { quantity: "desc" } },
           take: 10,
         }),
       ]);
 
       // Get menu item details for top items
-      const topItemIds = topItems.map(item => item.menuItemId);
+      const topItemIds = topItems.map((item) => item.menuItemId);
       const menuItems = await prisma.menuItem.findMany({
         where: { id: { in: topItemIds } },
         select: { id: true, name: true },
       });
 
-      const topItemsWithDetails = topItems.map(item => {
-        const menuItem = menuItems.find(mi => mi.id === item.menuItemId);
+      const topItemsWithDetails = topItems.map((item) => {
+        const menuItem = menuItems.find((mi) => mi.id === item.menuItemId);
         return {
           menuItemId: item.menuItemId,
-          menuItemName: menuItem?.name || 'Unknown',
+          menuItemName: menuItem?.name || "Unknown",
           totalQuantity: item._sum.quantity || 0,
         };
       });
@@ -514,12 +529,16 @@ export class OrderService {
         topItems: topItemsWithDetails,
       };
     } catch (error: any) {
-      loggers.error('Get order analytics failed:', error);
+      loggers.error("Get order analytics failed:", error);
       throw error;
     }
   }
 
-  static async getOrdersByStatus(status: string, page: number = 1, limit: number = 10) {
+  static async getOrdersByStatus(
+    status: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     const orderStatus = status as OrderStatus;
     try {
       const skip = (page - 1) * limit;
@@ -544,7 +563,7 @@ export class OrderService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.order.count({ where: { status: orderStatus } }),
       ]);
@@ -559,7 +578,7 @@ export class OrderService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get orders by status failed:', error);
+      loggers.error("Get orders by status failed:", error);
       throw error;
     }
   }
@@ -599,7 +618,7 @@ export class OrderService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.order.count({ where }),
       ]);
@@ -614,7 +633,7 @@ export class OrderService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get today\'s orders failed:', error);
+      loggers.error("Get today's orders failed:", error);
       throw error;
     }
   }

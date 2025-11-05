@@ -1,13 +1,17 @@
-import { prisma } from '@/config/database.js';
-import { CacheService } from '@/config/redis';
-import { AppError, NotFoundError, ConflictError } from '@/middleware/error.middleware.js';
-import { loggers } from '@/utils/logger.js';
-import { BookingStatus } from '../generated/prisma/enums';
-import type { 
+import { prisma } from "@/config/database.js";
+import { CacheService } from "@/config/redis";
+import {
+  AppError,
+  NotFoundError,
+  ConflictError,
+} from "@/middleware/error.middleware.js";
+import { loggers } from "@/utils/logger.js";
+import { BookingStatus } from "../generated/prisma/enums";
+import type {
   CreateEventInput,
   UpdateEventInput,
-  CreateBookingInput 
-} from '@/schemas/index.js';
+  CreateBookingInput,
+} from "@/schemas/index.js";
 
 export class AdminService {
   // Dashboard Analytics
@@ -40,7 +44,7 @@ export class AdminService {
           where,
           _sum: { totalPaise: true },
         }),
-        prisma.user.count({ where: { role: 'CUSTOMER' } }),
+        prisma.user.count({ where: { role: "CUSTOMER" } }),
         prisma.booking.count(),
         prisma.order.findMany({
           where,
@@ -54,7 +58,7 @@ export class AdminService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.booking.findMany({
           take: 5,
@@ -63,15 +67,15 @@ export class AdminService {
               select: { title: true },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.order.groupBy({
-          by: ['status'],
+          by: ["status"],
           where,
           _count: { status: true },
         }),
         prisma.order.groupBy({
-          by: ['orderType'],
+          by: ["orderType"],
           where,
           _count: { orderType: true },
         }),
@@ -94,7 +98,7 @@ export class AdminService {
         }, {} as any),
       };
     } catch (error: any) {
-      loggers.error('Get dashboard analytics failed:', error);
+      loggers.error("Get dashboard analytics failed:", error);
       throw error;
     }
   }
@@ -118,7 +122,7 @@ export class AdminService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.event.count(),
       ]);
@@ -133,7 +137,7 @@ export class AdminService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get all events failed:', error);
+      loggers.error("Get all events failed:", error);
       throw error;
     }
   }
@@ -153,18 +157,18 @@ export class AdminService {
                 },
               },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
           },
         },
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       return event;
     } catch (error: any) {
-      loggers.error('Get event by ID failed:', error);
+      loggers.error("Get event by ID failed:", error);
       throw error;
     }
   }
@@ -188,11 +192,11 @@ export class AdminService {
         },
       });
 
-      loggers.info('Event created successfully', { eventId: event.id });
+      loggers.info("Event created successfully", { eventId: event.id });
 
       return event;
     } catch (error: any) {
-      loggers.error('Create event failed:', error);
+      loggers.error("Create event failed:", error);
       throw error;
     }
   }
@@ -204,20 +208,28 @@ export class AdminService {
       });
 
       if (!existingEvent) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       const event = await prisma.event.update({
         where: { id },
         data: {
           ...(data.title && { title: data.title }),
-          ...(data.description !== undefined && { description: data.description }),
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
           ...(data.startAt && { startAt: new Date(data.startAt) }),
-          ...(data.endAt !== undefined && { endAt: data.endAt ? new Date(data.endAt) : null }),
+          ...(data.endAt !== undefined && {
+            endAt: data.endAt ? new Date(data.endAt) : null,
+          }),
           ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           ...(data.location !== undefined && { location: data.location }),
-          ...(data.externalUrl !== undefined && { externalUrl: data.externalUrl }),
-          ...(data.maxCapacity !== undefined && { maxCapacity: data.maxCapacity }),
+          ...(data.externalUrl !== undefined && {
+            externalUrl: data.externalUrl,
+          }),
+          ...(data.maxCapacity !== undefined && {
+            maxCapacity: data.maxCapacity,
+          }),
           ...(data.pricePaise !== undefined && { pricePaise: data.pricePaise }),
         },
         include: {
@@ -225,11 +237,11 @@ export class AdminService {
         },
       });
 
-      loggers.info('Event updated successfully', { eventId: event.id });
+      loggers.info("Event updated successfully", { eventId: event.id });
 
       return event;
     } catch (error: any) {
-      loggers.error('Update event failed:', error);
+      loggers.error("Update event failed:", error);
       throw error;
     }
   }
@@ -242,23 +254,23 @@ export class AdminService {
       });
 
       if (!event) {
-        throw new NotFoundError('Event not found');
+        throw new NotFoundError("Event not found");
       }
 
       // Check if event has bookings
       if (event.bookings.length > 0) {
-        throw new ConflictError('Cannot delete event with existing bookings');
+        throw new ConflictError("Cannot delete event with existing bookings");
       }
 
       await prisma.event.delete({
         where: { id },
       });
 
-      loggers.info('Event deleted successfully', { eventId: id });
+      loggers.info("Event deleted successfully", { eventId: id });
 
-      return { message: 'Event deleted successfully' };
+      return { message: "Event deleted successfully" };
     } catch (error: any) {
-      loggers.error('Delete event failed:', error);
+      loggers.error("Delete event failed:", error);
       throw error;
     }
   }
@@ -266,13 +278,13 @@ export class AdminService {
   // Bookings Management
   static async getAllBookings(query: any) {
     try {
-      const { 
-        status, 
-        eventId, 
-        startDate, 
-        endDate, 
-        page = 1, 
-        limit = 10 
+      const {
+        status,
+        eventId,
+        startDate,
+        endDate,
+        page = 1,
+        limit = 10,
       } = query;
       const skip = (page - 1) * limit;
 
@@ -318,7 +330,7 @@ export class AdminService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.booking.count({ where }),
       ]);
@@ -333,7 +345,7 @@ export class AdminService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get all bookings failed:', error);
+      loggers.error("Get all bookings failed:", error);
       throw error;
     }
   }
@@ -366,12 +378,12 @@ export class AdminService {
       });
 
       if (!booking) {
-        throw new NotFoundError('Booking not found');
+        throw new NotFoundError("Booking not found");
       }
 
       return booking;
     } catch (error: any) {
-      loggers.error('Get booking by ID failed:', error);
+      loggers.error("Get booking by ID failed:", error);
       throw error;
     }
   }
@@ -387,12 +399,15 @@ export class AdminService {
         });
 
         if (!event) {
-          throw new NotFoundError('Event not found');
+          throw new NotFoundError("Event not found");
         }
 
         // Check capacity if maxCapacity is set
-        if (event.maxCapacity && event.currentBookings + partySize > event.maxCapacity) {
-          throw new ConflictError('Event is fully booked');
+        if (
+          event.maxCapacity &&
+          event.currentBookings + partySize > event.maxCapacity
+        ) {
+          throw new ConflictError("Event is fully booked");
         }
       }
 
@@ -406,7 +421,7 @@ export class AdminService {
           date: new Date(date),
           notes: notes || null,
           eventId: eventId || null,
-          status: 'PENDING',
+          status: "PENDING",
         },
         include: {
           event: {
@@ -434,11 +449,11 @@ export class AdminService {
         });
       }
 
-      loggers.info('Booking created successfully', { bookingId: booking.id });
+      loggers.info("Booking created successfully", { bookingId: booking.id });
 
       return booking;
     } catch (error: any) {
-      loggers.error('Create booking failed:', error);
+      loggers.error("Create booking failed:", error);
       throw error;
     }
   }
@@ -450,7 +465,7 @@ export class AdminService {
       });
 
       if (!booking) {
-        throw new NotFoundError('Booking not found');
+        throw new NotFoundError("Booking not found");
       }
 
       const updatedBooking = await prisma.booking.update({
@@ -475,14 +490,14 @@ export class AdminService {
         },
       });
 
-      loggers.info('Booking status updated', { 
-        bookingId: id, 
-        status 
+      loggers.info("Booking status updated", {
+        bookingId: id,
+        status,
       });
 
       return updatedBooking;
     } catch (error: any) {
-      loggers.error('Update booking status failed:', error);
+      loggers.error("Update booking status failed:", error);
       throw error;
     }
   }
@@ -503,7 +518,7 @@ export class AdminService {
           skip,
           take: limit,
           where,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.media.count({ where }),
       ]);
@@ -518,7 +533,7 @@ export class AdminService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get all media failed:', error);
+      loggers.error("Get all media failed:", error);
       throw error;
     }
   }
@@ -530,11 +545,11 @@ export class AdminService {
       // 1. Validate file type and size
       // 2. Upload to MinIO/S3
       // 3. Save metadata to database
-      
+
       const data = await request.file();
-      
+
       if (!data) {
-        throw new AppError('No file uploaded', 400);
+        throw new AppError("No file uploaded", 400);
       }
 
       // For now, just save the metadata
@@ -545,15 +560,15 @@ export class AdminService {
           mimeType: data.mimetype,
           size: data.size || 0,
           caption: data.filename,
-          type: data.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+          type: data.mimetype.startsWith("video/") ? "VIDEO" : "IMAGE",
         },
       });
 
-      loggers.info('Media uploaded successfully', { mediaId: media.id });
+      loggers.info("Media uploaded successfully", { mediaId: media.id });
 
       return media;
     } catch (error: any) {
-      loggers.error('Upload media failed:', error);
+      loggers.error("Upload media failed:", error);
       throw error;
     }
   }
@@ -565,18 +580,18 @@ export class AdminService {
       });
 
       if (!media) {
-        throw new NotFoundError('Media not found');
+        throw new NotFoundError("Media not found");
       }
 
       await prisma.media.delete({
         where: { id },
       });
 
-      loggers.info('Media deleted successfully', { mediaId: id });
+      loggers.info("Media deleted successfully", { mediaId: id });
 
-      return { message: 'Media deleted successfully' };
+      return { message: "Media deleted successfully" };
     } catch (error: any) {
-      loggers.error('Delete media failed:', error);
+      loggers.error("Delete media failed:", error);
       throw error;
     }
   }
@@ -587,18 +602,18 @@ export class AdminService {
       // This would typically come from a settings table
       // For now, return default settings
       return {
-        restaurantName: 'Rapchai Café',
-        restaurantAddress: '123 Main Street, City, State',
-        restaurantPhone: '+1234567890',
-        restaurantEmail: 'info@rapchai.com',
+        restaurantName: "Rapchai Café",
+        restaurantAddress: "123 Main Street, City, State",
+        restaurantPhone: "+1234567890",
+        restaurantEmail: "info@rapchai.com",
         openingHours: {
-          monday: { open: '08:00', close: '22:00' },
-          tuesday: { open: '08:00', close: '22:00' },
-          wednesday: { open: '08:00', close: '22:00' },
-          thursday: { open: '08:00', close: '22:00' },
-          friday: { open: '08:00', close: '23:00' },
-          saturday: { open: '09:00', close: '23:00' },
-          sunday: { open: '09:00', close: '21:00' },
+          monday: { open: "08:00", close: "22:00" },
+          tuesday: { open: "08:00", close: "22:00" },
+          wednesday: { open: "08:00", close: "22:00" },
+          thursday: { open: "08:00", close: "22:00" },
+          friday: { open: "08:00", close: "23:00" },
+          saturday: { open: "09:00", close: "23:00" },
+          sunday: { open: "09:00", close: "21:00" },
         },
         deliveryRadius: 5, // km
         deliveryFee: 200, // paise
@@ -606,7 +621,7 @@ export class AdminService {
         taxRate: 8.5, // percentage
       };
     } catch (error: any) {
-      loggers.error('Get system settings failed:', error);
+      loggers.error("Get system settings failed:", error);
       throw error;
     }
   }
@@ -615,18 +630,22 @@ export class AdminService {
     try {
       // This would typically update a settings table
       // For now, just return the updated data
-      
-      loggers.info('System settings updated', { settings: data });
+
+      loggers.info("System settings updated", { settings: data });
 
       return data;
     } catch (error: any) {
-      loggers.error('Update system settings failed:', error);
+      loggers.error("Update system settings failed:", error);
       throw error;
     }
   }
 
   // Reports
-  static async getSalesReport(startDate?: string, endDate?: string, groupBy: string = 'day') {
+  static async getSalesReport(
+    startDate?: string,
+    endDate?: string,
+    groupBy: string = "day",
+  ) {
     try {
       const where: any = {};
 
@@ -649,30 +668,30 @@ export class AdminService {
           status: true,
           orderType: true,
         },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { createdAt: "asc" },
       });
 
       // Group by date
       const groupedData: { [key: string]: any } = {};
-      
-      orders.forEach(order => {
+
+      orders.forEach((order) => {
         const date = new Date(order.createdAt);
         let key: string;
-        
+
         switch (groupBy) {
-          case 'day':
-            key = date.toISOString().split('T')[0];
+          case "day":
+            key = date.toISOString().split("T")[0];
             break;
-          case 'week':
+          case "week":
             const weekStart = new Date(date);
             weekStart.setDate(date.getDate() - date.getDay());
-            key = weekStart.toISOString().split('T')[0];
+            key = weekStart.toISOString().split("T")[0];
             break;
-          case 'month':
-            key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          case "month":
+            key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
             break;
           default:
-            key = date.toISOString().split('T')[0];
+            key = date.toISOString().split("T")[0];
         }
 
         if (!groupedData[key]) {
@@ -687,26 +706,31 @@ export class AdminService {
 
         groupedData[key].totalOrders++;
         groupedData[key].totalRevenue += order.totalPaise;
-        
-        groupedData[key].ordersByType[order.orderType] = 
+
+        groupedData[key].ordersByType[order.orderType] =
           (groupedData[key].ordersByType[order.orderType] || 0) + 1;
-        
-        groupedData[key].ordersByStatus[order.status] = 
+
+        groupedData[key].ordersByStatus[order.status] =
           (groupedData[key].ordersByStatus[order.status] || 0) + 1;
       });
 
       return {
         summary: {
           totalOrders: orders.length,
-          totalRevenue: orders.reduce((sum, order) => sum + order.totalPaise, 0),
-          averageOrderValue: orders.length > 0 
-            ? orders.reduce((sum, order) => sum + order.totalPaise, 0) / orders.length 
-            : 0,
+          totalRevenue: orders.reduce(
+            (sum, order) => sum + order.totalPaise,
+            0,
+          ),
+          averageOrderValue:
+            orders.length > 0
+              ? orders.reduce((sum, order) => sum + order.totalPaise, 0) /
+                orders.length
+              : 0,
         },
         data: Object.values(groupedData),
       };
     } catch (error: any) {
-      loggers.error('Get sales report failed:', error);
+      loggers.error("Get sales report failed:", error);
       throw error;
     }
   }
@@ -725,42 +749,38 @@ export class AdminService {
         }
       }
 
-      const [
-        totalCustomers,
-        newCustomers,
-        topCustomers,
-        customerOrders,
-      ] = await Promise.all([
-        prisma.user.count({ where: { role: 'CUSTOMER' } }),
-        prisma.user.count({ 
-          where: { 
-            role: 'CUSTOMER',
-            ...where,
-          },
-        }),
-        prisma.order.groupBy({
-          by: ['customerPhone'],
-          where,
-          _sum: { totalPaise: true },
-          _count: { customerPhone: true },
-          orderBy: { _sum: { totalPaise: 'desc' } },
-          take: 10,
-        }),
-        prisma.order.findMany({
-          where,
-          select: {
-            customerPhone: true,
-            totalPaise: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: 'desc' },
-        }),
-      ]);
+      const [totalCustomers, newCustomers, topCustomers, customerOrders] =
+        await Promise.all([
+          prisma.user.count({ where: { role: "CUSTOMER" } }),
+          prisma.user.count({
+            where: {
+              role: "CUSTOMER",
+              ...where,
+            },
+          }),
+          prisma.order.groupBy({
+            by: ["customerPhone"],
+            where,
+            _sum: { totalPaise: true },
+            _count: { customerPhone: true },
+            orderBy: { _sum: { totalPaise: "desc" } },
+            take: 10,
+          }),
+          prisma.order.findMany({
+            where,
+            select: {
+              customerPhone: true,
+              totalPaise: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: "desc" },
+          }),
+        ]);
 
       return {
         totalCustomers,
         newCustomers,
-        topCustomers: topCustomers.map(customer => ({
+        topCustomers: topCustomers.map((customer) => ({
           phone: customer.customerPhone,
           totalSpent: customer._sum.totalPaise || 0,
           orderCount: customer._count.customerPhone,
@@ -768,7 +788,7 @@ export class AdminService {
         customerOrders,
       };
     } catch (error: any) {
-      loggers.error('Get customer analytics failed:', error);
+      loggers.error("Get customer analytics failed:", error);
       throw error;
     }
   }
@@ -777,7 +797,7 @@ export class AdminService {
   static async getAllMenuItems(page: number = 1, limit: number = 10) {
     try {
       const skip = (page - 1) * limit;
-      
+
       const [menuItems, total] = await Promise.all([
         prisma.menuItem.findMany({
           skip,
@@ -792,7 +812,7 @@ export class AdminService {
             },
           },
           orderBy: {
-            createdAt: 'desc',
+            createdAt: "desc",
           },
         }),
         prisma.menuItem.count(),
@@ -808,7 +828,7 @@ export class AdminService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get all menu items failed:', error);
+      loggers.error("Get all menu items failed:", error);
       throw error;
     }
   }
@@ -816,14 +836,14 @@ export class AdminService {
   static async createMenuItem(data: any) {
     try {
       const { categorySlug, ...menuItemData } = data;
-      
+
       // Find category by slug
       const category = await prisma.category.findUnique({
         where: { slug: categorySlug },
       });
 
       if (!category) {
-        throw new NotFoundError('Category not found');
+        throw new NotFoundError("Category not found");
       }
 
       const menuItem = await prisma.menuItem.create({
@@ -844,7 +864,7 @@ export class AdminService {
 
       return menuItem;
     } catch (error: any) {
-      loggers.error('Create menu item failed:', error);
+      loggers.error("Create menu item failed:", error);
       throw error;
     }
   }
@@ -852,18 +872,18 @@ export class AdminService {
   static async updateMenuItem(id: string, data: any) {
     try {
       const { categorySlug, ...updateData } = data;
-      
+
       let updatePayload: any = updateData;
-      
+
       if (categorySlug) {
         const category = await prisma.category.findUnique({
           where: { slug: categorySlug },
         });
 
         if (!category) {
-          throw new NotFoundError('Category not found');
+          throw new NotFoundError("Category not found");
         }
-        
+
         updatePayload.categoryId = category.id;
       }
 
@@ -883,7 +903,7 @@ export class AdminService {
 
       return menuItem;
     } catch (error: any) {
-      loggers.error('Update menu item failed:', error);
+      loggers.error("Update menu item failed:", error);
       throw error;
     }
   }
@@ -894,7 +914,7 @@ export class AdminService {
         where: { id },
       });
     } catch (error: any) {
-      loggers.error('Delete menu item failed:', error);
+      loggers.error("Delete menu item failed:", error);
       throw error;
     }
   }
@@ -904,13 +924,13 @@ export class AdminService {
     try {
       const categories = await prisma.category.findMany({
         orderBy: {
-          name: 'asc',
+          name: "asc",
         },
       });
 
       return categories;
     } catch (error: any) {
-      loggers.error('Get all categories failed:', error);
+      loggers.error("Get all categories failed:", error);
       throw error;
     }
   }
@@ -923,7 +943,7 @@ export class AdminService {
 
       return category;
     } catch (error: any) {
-      loggers.error('Create category failed:', error);
+      loggers.error("Create category failed:", error);
       throw error;
     }
   }
@@ -937,7 +957,7 @@ export class AdminService {
 
       return category;
     } catch (error: any) {
-      loggers.error('Update category failed:', error);
+      loggers.error("Update category failed:", error);
       throw error;
     }
   }
@@ -950,14 +970,16 @@ export class AdminService {
       });
 
       if (menuItemsCount > 0) {
-        throw new ConflictError('Cannot delete category with existing menu items');
+        throw new ConflictError(
+          "Cannot delete category with existing menu items",
+        );
       }
 
       await prisma.category.delete({
         where: { id },
       });
     } catch (error: any) {
-      loggers.error('Delete category failed:', error);
+      loggers.error("Delete category failed:", error);
       throw error;
     }
   }

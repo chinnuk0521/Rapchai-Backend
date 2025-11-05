@@ -1,7 +1,7 @@
 // @ts-ignore - types are in devDependencies
-import jwt from 'jsonwebtoken';
-import { env } from '@/config/env.js';
-import { prisma } from '@/config/database.js';
+import jwt from "jsonwebtoken";
+import { env } from "@/config/env.js";
+import { prisma } from "@/config/database.js";
 
 export interface JWTPayload {
   userId: string;
@@ -19,43 +19,45 @@ export interface RefreshTokenPayload {
 }
 
 export class JWTService {
-  static generateAccessToken(payload: Omit<JWTPayload, 'iat' | 'exp'>): string {
+  static generateAccessToken(payload: Omit<JWTPayload, "iat" | "exp">): string {
     // @ts-ignore - jsonwebtoken types are problematic
     return jwt.sign(payload, env.JWT_SECRET as string, {
       expiresIn: env.JWT_EXPIRES_IN as string,
-      issuer: 'rapchai-api',
-      audience: 'rapchai-client',
+      issuer: "rapchai-api",
+      audience: "rapchai-client",
     });
   }
 
-  static generateRefreshToken(payload: Omit<RefreshTokenPayload, 'iat' | 'exp'>): string {
+  static generateRefreshToken(
+    payload: Omit<RefreshTokenPayload, "iat" | "exp">,
+  ): string {
     // @ts-ignore - jsonwebtoken types are problematic
     return jwt.sign(payload, env.JWT_REFRESH_SECRET as string, {
       expiresIn: env.JWT_REFRESH_EXPIRES_IN as string,
-      issuer: 'rapchai-api',
-      audience: 'rapchai-client',
+      issuer: "rapchai-api",
+      audience: "rapchai-client",
     });
   }
 
   static verifyAccessToken(token: string): JWTPayload {
     try {
       return jwt.verify(token, env.JWT_SECRET, {
-        issuer: 'rapchai-api',
-        audience: 'rapchai-client',
+        issuer: "rapchai-api",
+        audience: "rapchai-client",
       }) as JWTPayload;
     } catch (error) {
-      throw new Error('Invalid access token');
+      throw new Error("Invalid access token");
     }
   }
 
   static verifyRefreshToken(token: string): RefreshTokenPayload {
     try {
       return jwt.verify(token, env.JWT_REFRESH_SECRET, {
-        issuer: 'rapchai-api',
-        audience: 'rapchai-client',
+        issuer: "rapchai-api",
+        audience: "rapchai-client",
       }) as RefreshTokenPayload;
     } catch (error) {
-      throw new Error('Invalid refresh token');
+      throw new Error("Invalid refresh token");
     }
   }
 
@@ -74,23 +76,25 @@ export class JWTService {
       });
     } catch (error) {
       // Token might not exist in DB, which is fine
-      console.log('Token revocation:', error);
+      console.log("Token revocation:", error);
     }
   }
 
-  static async validateRefreshToken(token: string): Promise<{ userId: string; tokenId: string }> {
+  static async validateRefreshToken(
+    token: string,
+  ): Promise<{ userId: string; tokenId: string }> {
     const payload = this.verifyRefreshToken(token);
-    
+
     // Check if token is revoked
     const revokedToken = await prisma.refreshToken.findFirst({
-      where: { 
+      where: {
         token: payload.tokenId,
-        isRevoked: true 
+        isRevoked: true,
       },
     });
 
     if (revokedToken) {
-      throw new Error('Token has been revoked');
+      throw new Error("Token has been revoked");
     }
 
     return { userId: payload.userId, tokenId: payload.tokenId };
@@ -104,7 +108,7 @@ export class JWTService {
         data: { isRevoked: true },
       });
     } catch (error) {
-      console.log('Revoke all tokens error:', error);
+      console.log("Revoke all tokens error:", error);
     }
   }
 

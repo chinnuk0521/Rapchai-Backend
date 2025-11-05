@@ -1,14 +1,18 @@
-import { prisma } from '@/config/database.js';
-import { CacheService } from '@/config/redis';
-import { AppError, NotFoundError, ConflictError } from '@/middleware/error.middleware.js';
-import { loggers } from '@/utils/logger.js';
-import type { 
-  CreateCategoryInput, 
+import { prisma } from "@/config/database.js";
+import { CacheService } from "@/config/redis";
+import {
+  AppError,
+  NotFoundError,
+  ConflictError,
+} from "@/middleware/error.middleware.js";
+import { loggers } from "@/utils/logger.js";
+import type {
+  CreateCategoryInput,
   UpdateCategoryInput,
   CreateMenuItemInput,
   UpdateMenuItemInput,
-  MenuQueryInput 
-} from '@/schemas/index.js';
+  MenuQueryInput,
+} from "@/schemas/index.js";
 
 export class MenuService {
   // Categories
@@ -39,7 +43,7 @@ export class MenuService {
               },
             },
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
         }),
         prisma.category.count(),
       ]);
@@ -59,7 +63,7 @@ export class MenuService {
 
       return result;
     } catch (error: any) {
-      loggers.error('Get all categories failed:', error);
+      loggers.error("Get all categories failed:", error);
       throw error;
     }
   }
@@ -79,13 +83,13 @@ export class MenuService {
         include: {
           items: {
             where: { isAvailable: true },
-            orderBy: { createdAt: 'asc' },
+            orderBy: { createdAt: "asc" },
           },
         },
       });
 
       if (!category) {
-        throw new NotFoundError('Category not found');
+        throw new NotFoundError("Category not found");
       }
 
       // Cache for 10 minutes
@@ -93,7 +97,7 @@ export class MenuService {
 
       return category;
     } catch (error: any) {
-      loggers.error('Get category by ID failed:', error);
+      loggers.error("Get category by ID failed:", error);
       throw error;
     }
   }
@@ -103,15 +107,14 @@ export class MenuService {
       // Check if category with same name or slug exists
       const existingCategory = await prisma.category.findFirst({
         where: {
-          OR: [
-            { name: data.name },
-            { slug: data.slug },
-          ],
+          OR: [{ name: data.name }, { slug: data.slug }],
         },
       });
 
       if (existingCategory) {
-        throw new ConflictError('Category with this name or slug already exists');
+        throw new ConflictError(
+          "Category with this name or slug already exists",
+        );
       }
 
       const category = await prisma.category.create({
@@ -128,13 +131,15 @@ export class MenuService {
       });
 
       // Clear categories cache
-      await CacheService.delPattern('categories:*');
+      await CacheService.delPattern("categories:*");
 
-      loggers.info('Category created successfully', { categoryId: category.id });
+      loggers.info("Category created successfully", {
+        categoryId: category.id,
+      });
 
       return category;
     } catch (error: any) {
-      loggers.error('Create category failed:', error);
+      loggers.error("Create category failed:", error);
       throw error;
     }
   }
@@ -147,7 +152,7 @@ export class MenuService {
       });
 
       if (!existingCategory) {
-        throw new NotFoundError('Category not found');
+        throw new NotFoundError("Category not found");
       }
 
       // Check for conflicts if updating name or slug
@@ -167,7 +172,9 @@ export class MenuService {
         });
 
         if (conflictCategory) {
-          throw new ConflictError('Category with this name or slug already exists');
+          throw new ConflictError(
+            "Category with this name or slug already exists",
+          );
         }
       }
 
@@ -176,7 +183,9 @@ export class MenuService {
         data: {
           ...(data.name && { name: data.name }),
           ...(data.slug && { slug: data.slug }),
-          ...(data.description !== undefined && { description: data.description }),
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
           ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
         },
@@ -187,13 +196,15 @@ export class MenuService {
 
       // Clear cache
       await CacheService.del(`category:${id}`);
-      await CacheService.delPattern('categories:*');
+      await CacheService.delPattern("categories:*");
 
-      loggers.info('Category updated successfully', { categoryId: category.id });
+      loggers.info("Category updated successfully", {
+        categoryId: category.id,
+      });
 
       return category;
     } catch (error: any) {
-      loggers.error('Update category failed:', error);
+      loggers.error("Update category failed:", error);
       throw error;
     }
   }
@@ -207,12 +218,14 @@ export class MenuService {
       });
 
       if (!category) {
-        throw new NotFoundError('Category not found');
+        throw new NotFoundError("Category not found");
       }
 
       // Check if category has items
       if (category.items.length > 0) {
-        throw new ConflictError('Cannot delete category with existing menu items');
+        throw new ConflictError(
+          "Cannot delete category with existing menu items",
+        );
       }
 
       await prisma.category.delete({
@@ -221,13 +234,13 @@ export class MenuService {
 
       // Clear cache
       await CacheService.del(`category:${id}`);
-      await CacheService.delPattern('categories:*');
+      await CacheService.delPattern("categories:*");
 
-      loggers.info('Category deleted successfully', { categoryId: id });
+      loggers.info("Category deleted successfully", { categoryId: id });
 
-      return { message: 'Category deleted successfully' };
+      return { message: "Category deleted successfully" };
     } catch (error: any) {
-      loggers.error('Delete category failed:', error);
+      loggers.error("Delete category failed:", error);
       throw error;
     }
   }
@@ -242,17 +255,23 @@ export class MenuService {
         try {
           // Validate required fields
           if (!item.name || !item.price || !item.category) {
-            errors.push({ item, error: 'Missing required fields: name, price, or category' });
+            errors.push({
+              item,
+              error: "Missing required fields: name, price, or category",
+            });
             continue;
           }
 
           // Find category by name
           const category = await prisma.category.findFirst({
-            where: { name: item.category }
+            where: { name: item.category },
           });
 
           if (!category) {
-            errors.push({ item, error: `Category "${item.category}" not found` });
+            errors.push({
+              item,
+              error: `Category "${item.category}" not found`,
+            });
             continue;
           }
 
@@ -263,8 +282,9 @@ export class MenuService {
               description: item.description || null,
               pricePaise: Math.round(parseFloat(item.price) * 100), // Convert to paise
               imageUrl: item.imageUrl || null,
-              isVeg: item.isVeg === 'true' || item.isVeg === true,
-              isAvailable: item.isAvailable === 'true' || item.isAvailable === true,
+              isVeg: item.isVeg === "true" || item.isVeg === true,
+              isAvailable:
+                item.isAvailable === "true" || item.isAvailable === true,
               categoryId: category.id,
               calories: item.calories ? parseInt(item.calories) : null,
               prepTime: item.prepTime ? parseInt(item.prepTime) : null,
@@ -278,7 +298,7 @@ export class MenuService {
       }
 
       // Clear cache
-      await CacheService.delPattern('menu:*');
+      await CacheService.delPattern("menu:*");
 
       return {
         success: results.length,
@@ -287,8 +307,8 @@ export class MenuService {
         errors,
       };
     } catch (error: any) {
-      loggers.error('Error in bulk create menu items:', error);
-      throw new AppError('Failed to bulk create menu items', 500);
+      loggers.error("Error in bulk create menu items:", error);
+      throw new AppError("Failed to bulk create menu items", 500);
     }
   }
 
@@ -314,8 +334,8 @@ export class MenuService {
 
       if (search) {
         where.OR = [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
         ];
       }
 
@@ -333,7 +353,7 @@ export class MenuService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.menuItem.count({ where }),
       ]);
@@ -348,7 +368,7 @@ export class MenuService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get all menu items failed:', error);
+      loggers.error("Get all menu items failed:", error);
       throw error;
     }
   }
@@ -377,7 +397,7 @@ export class MenuService {
       });
 
       if (!item) {
-        throw new NotFoundError('Menu item not found');
+        throw new NotFoundError("Menu item not found");
       }
 
       // Cache for 10 minutes
@@ -385,7 +405,7 @@ export class MenuService {
 
       return item;
     } catch (error: any) {
-      loggers.error('Get menu item by ID failed:', error);
+      loggers.error("Get menu item by ID failed:", error);
       throw error;
     }
   }
@@ -398,7 +418,7 @@ export class MenuService {
       });
 
       if (!category) {
-        throw new NotFoundError('Category not found');
+        throw new NotFoundError("Category not found");
       }
 
       const item = await prisma.menuItem.create({
@@ -424,14 +444,14 @@ export class MenuService {
       });
 
       // Clear cache
-      await CacheService.delPattern('menuItems:*');
+      await CacheService.delPattern("menuItems:*");
       await CacheService.del(`category:${data.categoryId}`);
 
-      loggers.info('Menu item created successfully', { itemId: item.id });
+      loggers.info("Menu item created successfully", { itemId: item.id });
 
       return item;
     } catch (error: any) {
-      loggers.error('Create menu item failed:', error);
+      loggers.error("Create menu item failed:", error);
       throw error;
     }
   }
@@ -444,7 +464,7 @@ export class MenuService {
       });
 
       if (!existingItem) {
-        throw new NotFoundError('Menu item not found');
+        throw new NotFoundError("Menu item not found");
       }
 
       // Verify category if updating
@@ -454,7 +474,7 @@ export class MenuService {
         });
 
         if (!category) {
-          throw new NotFoundError('Category not found');
+          throw new NotFoundError("Category not found");
         }
       }
 
@@ -462,11 +482,15 @@ export class MenuService {
         where: { id },
         data: {
           ...(data.name && { name: data.name }),
-          ...(data.description !== undefined && { description: data.description }),
+          ...(data.description !== undefined && {
+            description: data.description,
+          }),
           ...(data.pricePaise !== undefined && { pricePaise: data.pricePaise }),
           ...(data.imageUrl !== undefined && { imageUrl: data.imageUrl }),
           ...(data.isVeg !== undefined && { isVeg: data.isVeg }),
-          ...(data.isAvailable !== undefined && { isAvailable: data.isAvailable }),
+          ...(data.isAvailable !== undefined && {
+            isAvailable: data.isAvailable,
+          }),
           ...(data.categoryId && { categoryId: data.categoryId }),
           ...(data.sortOrder !== undefined && { sortOrder: data.sortOrder }),
         },
@@ -483,14 +507,14 @@ export class MenuService {
 
       // Clear cache
       await CacheService.del(`menuItem:${id}`);
-      await CacheService.delPattern('menuItems:*');
+      await CacheService.delPattern("menuItems:*");
       await CacheService.del(`category:${item.categoryId}`);
 
-      loggers.info('Menu item updated successfully', { itemId: item.id });
+      loggers.info("Menu item updated successfully", { itemId: item.id });
 
       return item;
     } catch (error: any) {
-      loggers.error('Update menu item failed:', error);
+      loggers.error("Update menu item failed:", error);
       throw error;
     }
   }
@@ -503,7 +527,7 @@ export class MenuService {
       });
 
       if (!item) {
-        throw new NotFoundError('Menu item not found');
+        throw new NotFoundError("Menu item not found");
       }
 
       await prisma.menuItem.delete({
@@ -512,14 +536,14 @@ export class MenuService {
 
       // Clear cache
       await CacheService.del(`menuItem:${id}`);
-      await CacheService.delPattern('menuItems:*');
+      await CacheService.delPattern("menuItems:*");
       await CacheService.del(`category:${item.categoryId}`);
 
-      loggers.info('Menu item deleted successfully', { itemId: id });
+      loggers.info("Menu item deleted successfully", { itemId: id });
 
-      return { message: 'Menu item deleted successfully' };
+      return { message: "Menu item deleted successfully" };
     } catch (error: any) {
-      loggers.error('Delete menu item failed:', error);
+      loggers.error("Delete menu item failed:", error);
       throw error;
     }
   }
@@ -531,7 +555,7 @@ export class MenuService {
       });
 
       if (!item) {
-        throw new NotFoundError('Menu item not found');
+        throw new NotFoundError("Menu item not found");
       }
 
       const updatedItem = await prisma.menuItem.update({
@@ -550,22 +574,26 @@ export class MenuService {
 
       // Clear cache
       await CacheService.del(`menuItem:${id}`);
-      await CacheService.delPattern('menuItems:*');
+      await CacheService.delPattern("menuItems:*");
       await CacheService.del(`category:${item.categoryId}`);
 
-      loggers.info('Menu item availability toggled', { 
-        itemId: id, 
-        isAvailable: updatedItem.isAvailable 
+      loggers.info("Menu item availability toggled", {
+        itemId: id,
+        isAvailable: updatedItem.isAvailable,
       });
 
       return updatedItem;
     } catch (error: any) {
-      loggers.error('Toggle item availability failed:', error);
+      loggers.error("Toggle item availability failed:", error);
       throw error;
     }
   }
 
-  static async getMenuItemsByCategory(categoryId: string, page: number = 1, limit: number = 10) {
+  static async getMenuItemsByCategory(
+    categoryId: string,
+    page: number = 1,
+    limit: number = 10,
+  ) {
     try {
       const skip = (page - 1) * limit;
 
@@ -573,7 +601,7 @@ export class MenuService {
         prisma.menuItem.findMany({
           skip,
           take: limit,
-          where: { 
+          where: {
             categoryId,
             isAvailable: true,
           },
@@ -586,10 +614,10 @@ export class MenuService {
               },
             },
           },
-          orderBy: { sortOrder: 'asc' },
+          orderBy: { sortOrder: "asc" },
         }),
-        prisma.menuItem.count({ 
-          where: { 
+        prisma.menuItem.count({
+          where: {
             categoryId,
             isAvailable: true,
           },
@@ -606,7 +634,7 @@ export class MenuService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get menu items by category failed:', error);
+      loggers.error("Get menu items by category failed:", error);
       throw error;
     }
   }
@@ -620,8 +648,8 @@ export class MenuService {
 
       if (q) {
         where.OR = [
-          { name: { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
+          { name: { contains: q, mode: "insensitive" } },
+          { description: { contains: q, mode: "insensitive" } },
         ];
       }
 
@@ -651,7 +679,7 @@ export class MenuService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.menuItem.count({ where }),
       ]);
@@ -666,7 +694,7 @@ export class MenuService {
         },
       };
     } catch (error: any) {
-      loggers.error('Search menu items failed:', error);
+      loggers.error("Search menu items failed:", error);
       throw error;
     }
   }

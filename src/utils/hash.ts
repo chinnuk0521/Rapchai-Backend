@@ -1,5 +1,5 @@
-import argon2 from 'argon2';
-import { env } from '@/config/env.js';
+import argon2 from "argon2";
+import { env } from "@/config/env.js";
 
 export class HashService {
   static async hashPassword(password: string): Promise<string> {
@@ -11,11 +11,14 @@ export class HashService {
         parallelism: env.ARGON2_PARALLELISM,
       });
     } catch (error) {
-      throw new Error('Password hashing failed');
+      throw new Error("Password hashing failed");
     }
   }
 
-  static async verifyPassword(password: string, hash: string): Promise<boolean> {
+  static async verifyPassword(
+    password: string,
+    hash: string,
+  ): Promise<boolean> {
     try {
       return await argon2.verify(hash, password);
     } catch (error) {
@@ -35,24 +38,26 @@ export class HashService {
   }
 
   static generateRandomPassword(length: number = 12): string {
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    
+    const charset =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+    let password = "";
+
     for (let i = 0; i < length; i++) {
       password += charset.charAt(Math.floor(Math.random() * charset.length));
     }
-    
+
     return password;
   }
 
   static generateRandomToken(length: number = 32): string {
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let token = '';
-    
+    const charset =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let token = "";
+
     for (let i = 0; i < length; i++) {
       token += charset.charAt(Math.floor(Math.random() * charset.length));
     }
-    
+
     return token;
   }
 }

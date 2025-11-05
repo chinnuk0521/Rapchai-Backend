@@ -1,17 +1,22 @@
-import { prisma } from '@/config/database.js';
-import { HashService } from '@/utils/hash.js';
-import { JWTService } from '@/utils/jwt.js';
-import { CacheService } from '@/config/redis.js';
-import { AppError, UnauthorizedError, ConflictError, NotFoundError } from '@/middleware/error.middleware.js';
-import { loggers } from '@/utils/logger.js';
-import type { 
-  LoginInput, 
-  RegisterInput, 
-  RefreshTokenInput, 
+import { prisma } from "@/config/database.js";
+import { HashService } from "@/utils/hash.js";
+import { JWTService } from "@/utils/jwt.js";
+import { CacheService } from "@/config/redis.js";
+import {
+  AppError,
+  UnauthorizedError,
+  ConflictError,
+  NotFoundError,
+} from "@/middleware/error.middleware.js";
+import { loggers } from "@/utils/logger.js";
+import type {
+  LoginInput,
+  RegisterInput,
+  RefreshTokenInput,
   ChangePasswordInput,
   CreateUserInput,
-  UpdateUserInput 
-} from '@/schemas/index.js';
+  UpdateUserInput,
+} from "@/schemas/index.js";
 
 export class AuthService {
   static async register(data: RegisterInput) {
@@ -22,7 +27,7 @@ export class AuthService {
       });
 
       if (existingUser) {
-        throw new ConflictError('User with this email already exists');
+        throw new ConflictError("User with this email already exists");
       }
 
       // Hash password
@@ -34,7 +39,7 @@ export class AuthService {
           name: data.name,
           email: data.email,
           passwordHash,
-          role: 'CUSTOMER',
+          role: "CUSTOMER",
         },
         select: {
           id: true,
@@ -54,7 +59,10 @@ export class AuthService {
 
       const refreshToken = await JWTService.createRefreshToken(user.id);
 
-      loggers.info('User registered successfully', { userId: user.id, email: user.email });
+      loggers.info("User registered successfully", {
+        userId: user.id,
+        email: user.email,
+      });
 
       return {
         user,
@@ -62,7 +70,7 @@ export class AuthService {
         refreshToken,
       };
     } catch (error: any) {
-      loggers.error('Registration failed:', error);
+      loggers.error("Registration failed:", error);
       throw error;
     }
   }
@@ -83,9 +91,14 @@ export class AuthService {
       });
 
       // Temporary fallback for admin user - create if doesn't exist
-      if (data.email === "chandu.kalluru@outlook.com" && data.password === "Kalluru@145") {
+      if (
+        data.email === "chandu.kalluru@outlook.com" &&
+        data.password === "Kalluru@145"
+      ) {
         if (!user) {
-          const adminPasswordHash = await HashService.hashPassword(data.password);
+          const adminPasswordHash = await HashService.hashPassword(
+            data.password,
+          );
           user = await prisma.user.create({
             data: {
               email: data.email,
@@ -106,25 +119,31 @@ export class AuthService {
       }
 
       if (!user) {
-        throw new UnauthorizedError('Invalid credentials');
+        throw new UnauthorizedError("Invalid credentials");
       }
 
       if (!user.passwordHash) {
-        throw new UnauthorizedError('Account not properly set up');
+        throw new UnauthorizedError("Account not properly set up");
       }
 
       // Verify password
       let isValidPassword = false;
-      
+
       // Temporary fallback for admin user
-      if (data.email === "chandu.kalluru@outlook.com" && data.password === "Kalluru@145") {
+      if (
+        data.email === "chandu.kalluru@outlook.com" &&
+        data.password === "Kalluru@145"
+      ) {
         isValidPassword = true;
       } else {
-        isValidPassword = await HashService.verifyPassword(data.password, user.passwordHash);
+        isValidPassword = await HashService.verifyPassword(
+          data.password,
+          user.passwordHash,
+        );
       }
-      
+
       if (!isValidPassword) {
-        throw new UnauthorizedError('Invalid credentials');
+        throw new UnauthorizedError("Invalid credentials");
       }
 
       // Check if password needs rehashing
@@ -146,14 +165,21 @@ export class AuthService {
       const refreshToken = await JWTService.createRefreshToken(user.id);
 
       // Cache user data
-      await CacheService.set(`user:${user.id}`, {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        name: user.name,
-      }, 3600); // 1 hour
+      await CacheService.set(
+        `user:${user.id}`,
+        {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          name: user.name,
+        },
+        3600,
+      ); // 1 hour
 
-      loggers.info('User logged in successfully', { userId: user.id, email: user.email });
+      loggers.info("User logged in successfully", {
+        userId: user.id,
+        email: user.email,
+      });
 
       return {
         user: {
@@ -167,14 +193,16 @@ export class AuthService {
         refreshToken,
       };
     } catch (error: any) {
-      loggers.error('Login failed:', error);
+      loggers.error("Login failed:", error);
       throw error;
     }
   }
 
   static async refreshToken(data: RefreshTokenInput) {
     try {
-      const { userId, tokenId } = await JWTService.validateRefreshToken(data.refreshToken);
+      const { userId, tokenId } = await JWTService.validateRefreshToken(
+        data.refreshToken,
+      );
 
       // Get user data
       const user = await prisma.user.findUnique({
@@ -188,7 +216,7 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new UnauthorizedError('User not found');
+        throw new UnauthorizedError("User not found");
       }
 
       // Generate new access token
@@ -201,14 +229,14 @@ export class AuthService {
       // Optionally generate new refresh token (refresh token rotation)
       const newRefreshToken = await JWTService.createRefreshToken(user.id);
 
-      loggers.info('Token refreshed successfully', { userId: user.id });
+      loggers.info("Token refreshed successfully", { userId: user.id });
 
       return {
         accessToken,
         refreshToken: newRefreshToken,
       };
     } catch (error: any) {
-      loggers.error('Token refresh failed:', error);
+      loggers.error("Token refresh failed:", error);
       throw error;
     }
   }
@@ -221,11 +249,11 @@ export class AuthService {
       // Clear user cache
       await CacheService.del(`user:${userId}`);
 
-      loggers.info('User logged out successfully', { userId });
+      loggers.info("User logged out successfully", { userId });
 
-      return { message: 'Logged out successfully' };
+      return { message: "Logged out successfully" };
     } catch (error: any) {
-      loggers.error('Logout failed:', error);
+      loggers.error("Logout failed:", error);
       throw error;
     }
   }
@@ -239,14 +267,17 @@ export class AuthService {
       });
 
       if (!user || !user.passwordHash) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError("User not found");
       }
 
       // Verify current password
-      const isValidPassword = await HashService.verifyPassword(data.currentPassword, user.passwordHash);
-      
+      const isValidPassword = await HashService.verifyPassword(
+        data.currentPassword,
+        user.passwordHash,
+      );
+
       if (!isValidPassword) {
-        throw new UnauthorizedError('Current password is incorrect');
+        throw new UnauthorizedError("Current password is incorrect");
       }
 
       // Hash new password
@@ -261,11 +292,11 @@ export class AuthService {
       // Revoke all refresh tokens to force re-login
       await JWTService.revokeAllUserTokens(userId);
 
-      loggers.info('Password changed successfully', { userId });
+      loggers.info("Password changed successfully", { userId });
 
-      return { message: 'Password changed successfully' };
+      return { message: "Password changed successfully" };
     } catch (error: any) {
-      loggers.error('Password change failed:', error);
+      loggers.error("Password change failed:", error);
       throw error;
     }
   }
@@ -278,7 +309,7 @@ export class AuthService {
       });
 
       if (existingUser) {
-        throw new ConflictError('User with this email already exists');
+        throw new ConflictError("User with this email already exists");
       }
 
       // Hash password
@@ -301,11 +332,14 @@ export class AuthService {
         },
       });
 
-      loggers.info('User created successfully', { userId: user.id, email: user.email });
+      loggers.info("User created successfully", {
+        userId: user.id,
+        email: user.email,
+      });
 
       return user;
     } catch (error: any) {
-      loggers.error('User creation failed:', error);
+      loggers.error("User creation failed:", error);
       throw error;
     }
   }
@@ -318,7 +352,7 @@ export class AuthService {
       });
 
       if (!existingUser) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError("User not found");
       }
 
       // Check email uniqueness if email is being updated
@@ -328,7 +362,7 @@ export class AuthService {
         });
 
         if (emailExists) {
-          throw new ConflictError('User with this email already exists');
+          throw new ConflictError("User with this email already exists");
         }
       }
 
@@ -353,11 +387,11 @@ export class AuthService {
       // Clear user cache
       await CacheService.del(`user:${userId}`);
 
-      loggers.info('User updated successfully', { userId: user.id });
+      loggers.info("User updated successfully", { userId: user.id });
 
       return user;
     } catch (error: any) {
-      loggers.error('User update failed:', error);
+      loggers.error("User update failed:", error);
       throw error;
     }
   }
@@ -384,7 +418,7 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new NotFoundError('User not found');
+        throw new NotFoundError("User not found");
       }
 
       // Cache user data
@@ -392,7 +426,7 @@ export class AuthService {
 
       return user;
     } catch (error: any) {
-      loggers.error('Get user failed:', error);
+      loggers.error("Get user failed:", error);
       throw error;
     }
   }
@@ -413,7 +447,7 @@ export class AuthService {
             createdAt: true,
             updatedAt: true,
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
         }),
         prisma.user.count(),
       ]);
@@ -428,7 +462,7 @@ export class AuthService {
         },
       };
     } catch (error: any) {
-      loggers.error('Get all users failed:', error);
+      loggers.error("Get all users failed:", error);
       throw error;
     }
   }
