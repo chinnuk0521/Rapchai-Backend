@@ -12,22 +12,54 @@ import 'dotenv/config';
 // Note: This is a fallback - tsc-alias should resolve paths during build
 try {
   const tsPaths = require('tsconfig-paths');
-  // Register paths for dist/ folder (runtime fallback)
+  const path = require('path');
+  const fs = require('fs');
+  
+  // Detect where files actually are (dist/ or src/)
+  const possibleBasePaths = [
+    path.join(__dirname, '..', 'dist'),
+    path.join(__dirname, '..', 'src'),
+    path.join(__dirname, 'dist'),
+    path.join(__dirname, 'src'),
+    './dist',
+    './src'
+  ];
+  
+  let basePath = './dist'; // Default
+  for (const base of possibleBasePaths) {
+    try {
+      const testPath = path.resolve(base, 'config', 'env.js');
+      if (fs.existsSync(testPath)) {
+        basePath = base;
+        console.log(`✅ Found files in: ${basePath}`);
+        break;
+      }
+    } catch (e) {
+      // Continue to next path
+    }
+  }
+  
+  // Register paths for detected folder (runtime fallback)
   tsPaths.register({
-    baseUrl: './dist',
+    baseUrl: basePath,
     paths: {
       '@/*': ['*'],
       '@/config/*': ['config/*'],
       '@/middleware/*': ['middleware/*'],
       '@/routes/*': ['routes/*'],
       '@/services/*': ['services/*'],
-      '@/utils/*': ['utils/*']
+      '@/schemas/*': ['schemas/*'],
+      '@/utils/*': ['utils/*'],
+      '@/types/*': ['types/*'],
+      '@/jobs/*': ['jobs/*'],
+      '@/plugins/*': ['plugins/*']
     }
   });
-  console.log('✅ Runtime path alias fallback registered');
+  console.log(`✅ Runtime path alias fallback registered for: ${basePath}`);
 } catch (e) {
   // tsconfig-paths not available or failed, that's okay - we rely on tsc-alias
   console.log('tsconfig-paths fallback not available, using tsc-alias resolved paths');
+  console.log('Error:', e?.message || e);
 }
 
 // Use lazy imports to handle module-level errors gracefully
