@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "baseUrl": "./dist",
+    "outDir": "./dist",
+    "paths": {
+      "@/*": ["*"],
+      "@/config/*": ["config/*"],
+      "@/controllers/*": ["controllers/*"],
+      "@/middleware/*": ["middleware/*"],
+      "@/routes/*": ["routes/*"],
+      "@/services/*": ["services/*"],
+      "@/schemas/*": ["schemas/*"],
+      "@/utils/*": ["utils/*"],
+      "@/types/*": ["types/*"],
+      "@/jobs/*": ["jobs/*"],
+      "@/plugins/*": ["plugins/*"]
+    }
+  },
+  "tsc-alias": {
+    "verbose": true,
+    "resolveFullPaths": true
+  }
+}
