@@ -476,28 +476,64 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('🔍 [Module Loader] __dirname:', __dirname);
       // Try multiple possible paths - Vercel might structure files differently
       // Dynamic imports from dist folder (runtime only, not available at compile time)
-      try {
-        createAppModule = await import('../dist/app.js') as any;
-        console.log('✅ [Module Loader] Loaded from ../dist/app.js');
-      } catch (e1: any) {
+      // Check what files actually exist first
+      console.log('🔍 [Module Loader] Checking available paths...');
+      console.log('🔍 [Module Loader] __dirname:', __dirname);
+      console.log('🔍 [Module Loader] process.cwd():', process.cwd());
+      console.log('🔍 [Module Loader] projectRoot:', projectRoot);
+      
+      const possibleAppPaths = [
+        path.join(projectRoot, 'dist', 'app.js'),
+        path.join(__dirname, '..', 'dist', 'app.js'),
+        path.join(__dirname, 'dist', 'app.js'),
+        path.join(process.cwd(), 'dist', 'app.js'),
+        path.join(process.cwd(), 'src', 'app.js'),
+        '/var/task/dist/app.js',
+        '/var/task/src/app.js',
+      ];
+      
+      console.log('🔍 [Module Loader] Checking paths:', possibleAppPaths);
+      
+      let foundPath = null;
+      for (const appPath of possibleAppPaths) {
+        if (fs.existsSync(appPath)) {
+          foundPath = appPath;
+          console.log(`✅ [Module Loader] Found app.js at: ${appPath}`);
+          break;
+        } else {
+          console.log(`❌ [Module Loader] Not found: ${appPath}`);
+        }
+      }
+      
+      if (foundPath) {
+        // Use require for absolute paths
+        createAppModule = require(foundPath);
+        console.log('✅ [Module Loader] Loaded app.js using require');
+      } else {
+        // Fallback to dynamic imports
         try {
-          createAppModule = await import('./dist/app.js') as any;
-          console.log('✅ [Module Loader] Loaded from ./dist/app.js');
-        } catch (e2: any) {
+          createAppModule = await import('../dist/app.js') as any;
+          console.log('✅ [Module Loader] Loaded from ../dist/app.js');
+        } catch (e1: any) {
           try {
-            createAppModule = await import('../../dist/app.js') as any;
-            console.log('✅ [Module Loader] Loaded from ../../dist/app.js');
-          } catch (e3: any) {
-            // Try looking in src/ as fallback (Vercel might compile from src/)
+            createAppModule = await import('./dist/app.js') as any;
+            console.log('✅ [Module Loader] Loaded from ./dist/app.js');
+          } catch (e2: any) {
             try {
-              createAppModule = await import('../src/app.js') as any;
-              console.log('✅ [Module Loader] Loaded from ../src/app.js (Vercel compiled)');
-            } catch (e4: any) {
-              const err1 = e1 instanceof Error ? e1.message : String(e1);
-              const err2 = e2 instanceof Error ? e2.message : String(e2);
-              const err3 = e3 instanceof Error ? e3.message : String(e3);
-              const err4 = e4 instanceof Error ? e4.message : String(e4);
-              throw new Error(`Failed to find app.js. Tried: ../dist/app.js, ./dist/app.js, ../../dist/app.js, ../src/app.js. Errors: ${err1}, ${err2}, ${err3}, ${err4}`);
+              createAppModule = await import('../../dist/app.js') as any;
+              console.log('✅ [Module Loader] Loaded from ../../dist/app.js');
+            } catch (e3: any) {
+              // Try looking in src/ as fallback (Vercel might compile from src/)
+              try {
+                createAppModule = await import('../src/app.js') as any;
+                console.log('✅ [Module Loader] Loaded from ../src/app.js (Vercel compiled)');
+              } catch (e4: any) {
+                const err1 = e1 instanceof Error ? e1.message : String(e1);
+                const err2 = e2 instanceof Error ? e2.message : String(e2);
+                const err3 = e3 instanceof Error ? e3.message : String(e3);
+                const err4 = e4 instanceof Error ? e4.message : String(e4);
+                throw new Error(`Failed to find app.js. Tried: ${possibleAppPaths.join(', ')}. Errors: ${err1}, ${err2}, ${err3}, ${err4}`);
+              }
             }
           }
         }
@@ -506,20 +542,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!configModule) {
       console.log('🔍 [Module Loader] Loading config module from dist/config/index.js...');
-      // Dynamic imports from dist folder (runtime only, not available at compile time)
-      try {
-        configModule = await import('../dist/config/index.js') as any;
-      } catch (e1: any) {
+      
+      const possibleConfigPaths = [
+        path.join(projectRoot, 'dist', 'config', 'index.js'),
+        path.join(__dirname, '..', 'dist', 'config', 'index.js'),
+        path.join(__dirname, 'dist', 'config', 'index.js'),
+        path.join(process.cwd(), 'dist', 'config', 'index.js'),
+        '/var/task/dist/config/index.js',
+      ];
+      
+      console.log('🔍 [Module Loader] Checking config paths:', possibleConfigPaths);
+      
+      let foundConfigPath = null;
+      for (const configPath of possibleConfigPaths) {
+        if (fs.existsSync(configPath)) {
+          foundConfigPath = configPath;
+          console.log(`✅ [Module Loader] Found config/index.js at: ${configPath}`);
+          break;
+        } else {
+          console.log(`❌ [Module Loader] Not found: ${configPath}`);
+        }
+      }
+      
+      if (foundConfigPath) {
+        // Use require for absolute paths
+        configModule = require(foundConfigPath);
+        console.log('✅ [Module Loader] Loaded config/index.js using require');
+      } else {
+        // Fallback to dynamic imports
         try {
-          configModule = await import('./dist/config/index.js') as any;
-        } catch (e2: any) {
+          configModule = await import('../dist/config/index.js') as any;
+          console.log('✅ [Module Loader] Loaded from ../dist/config/index.js');
+        } catch (e1: any) {
           try {
-            configModule = await import('../../dist/config/index.js') as any;
-          } catch (e3: any) {
-            const err1 = e1 instanceof Error ? e1.message : String(e1);
-            const err2 = e2 instanceof Error ? e2.message : String(e2);
-            const err3 = e3 instanceof Error ? e3.message : String(e3);
-            throw new Error(`Failed to find config/index.js in any location. Errors: ${err1}, ${err2}, ${err3}`);
+            configModule = await import('./dist/config/index.js') as any;
+            console.log('✅ [Module Loader] Loaded from ./dist/config/index.js');
+          } catch (e2: any) {
+            try {
+              configModule = await import('../../dist/config/index.js') as any;
+              console.log('✅ [Module Loader] Loaded from ../../dist/config/index.js');
+            } catch (e3: any) {
+              const err1 = e1 instanceof Error ? e1.message : String(e1);
+              const err2 = e2 instanceof Error ? e2.message : String(e2);
+              const err3 = e3 instanceof Error ? e3.message : String(e3);
+              throw new Error(`Failed to find config/index.js in any location. Errors: ${err1}, ${err2}, ${err3}`);
+            }
           }
         }
       }
