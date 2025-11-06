@@ -424,15 +424,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (responseSent) return;
     responseSent = true;
     
+    // Always include detailed error information for debugging
     const errorResponse: any = { 
-      error: 'Internal server error', 
-      message: error?.message || 'Unknown error',
+      error: error?.error || error?.name || 'Internal server error', 
+      message: error?.message || error || 'Unknown error',
     };
     
-    if (process.env['NODE_ENV'] === 'development') {
-      errorResponse.stack = error?.stack;
-      errorResponse.details = error;
+    // Include error code if available
+    if (error?.code) {
+      errorResponse.code = error.code;
     }
+    
+    // Include details if available
+    if (error?.details) {
+      errorResponse.details = error.details;
+    }
+    
+    // Include hint if available
+    if (error?.hint) {
+      errorResponse.hint = error.hint;
+    }
+    
+    // Include additional context for debugging
+    if (error?.cwd || error?.dirname) {
+      errorResponse.context = {
+        cwd: error.cwd || process.cwd(),
+        dirname: error.dirname || __dirname,
+      };
+    }
+    
+    // In development, include full stack trace
+    if (process.env['NODE_ENV'] === 'development' || process.env['VERCEL_ENV'] === 'development') {
+      errorResponse.stack = error?.stack;
+      errorResponse.fullError = error;
+    }
+    
+    console.error('❌ [Error Response] Sending error response:', {
+      status,
+      error: errorResponse.error,
+      message: errorResponse.message,
+    });
     
     res.status(status).json(errorResponse);
   };
