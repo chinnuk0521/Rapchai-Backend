@@ -8,6 +8,7 @@
     "build": "tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json",
     "start": "node dist/server.js",
     "postinstall": "prisma generate && rm -rf src/generated/prisma && prisma generate && tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json",
+    "vercel-build": "echo 'Build completed in postinstall'",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
