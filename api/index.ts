@@ -67,65 +67,98 @@ const pathMapping = {
 // Custom module resolver that intercepts ALL require() calls
 // This MUST be set up before any modules are loaded
 const originalResolveFilename = Module._resolveFilename;
+console.log('🔍 [Path Resolver] Setting up Module._resolveFilename interceptor...');
+
 Module._resolveFilename = function(request: string, parent: any, isMain: boolean, options: any) {
+  // Log all require() calls for debugging
+  const parentFile = parent?.filename || parent?.id || 'unknown';
+  const isAliasPath = request && request.startsWith('@/');
+  
+  if (isAliasPath) {
+    console.log(`🔍 [Path Resolver] Intercepted require('${request}') from: ${parentFile}`);
+  }
+  
   // If the request starts with @/, resolve it using our path mapping
-  if (request && request.startsWith('@/')) {
+  if (isAliasPath) {
     // Extract the path after @/
     const aliasPath = request.substring(2); // Remove '@/'
+    console.log(`🔍 [Path Resolver] Resolving alias path: ${aliasPath}`);
     
     // Try to resolve using detected base path first
     let resolvedPath = null;
+    let triedPaths: string[] = [];
+    
     for (const base of possibleBasePaths) {
       try {
         const candidatePath = path.join(base, aliasPath);
+        triedPaths.push(candidatePath);
+        
         // Try with .js extension
-        if (fs.existsSync(candidatePath + '.js')) {
-          resolvedPath = candidatePath + '.js';
-          console.log(`✅ Resolved ${request} → ${resolvedPath} (from ${base})`);
+        const jsPath = candidatePath + '.js';
+        console.log(`🔍 [Path Resolver] Trying: ${jsPath}`);
+        if (fs.existsSync(jsPath)) {
+          resolvedPath = jsPath;
+          console.log(`✅ [Path Resolver] Found: ${resolvedPath} (from ${base})`);
           break;
         }
+        
         // Try without extension (for directories with index.js)
         if (fs.existsSync(candidatePath)) {
           const indexPath = path.join(candidatePath, 'index.js');
+          console.log(`🔍 [Path Resolver] Trying directory with index: ${indexPath}`);
           if (fs.existsSync(indexPath)) {
             resolvedPath = indexPath;
-            console.log(`✅ Resolved ${request} → ${resolvedPath} (from ${base})`);
+            console.log(`✅ [Path Resolver] Found: ${resolvedPath} (from ${base})`);
             break;
           }
         }
-      } catch (e) {
+      } catch (e: any) {
+        console.log(`⚠️ [Path Resolver] Error checking ${base}/${aliasPath}:`, e?.message);
         // Continue to next path
       }
     }
     
     if (resolvedPath) {
       try {
+        console.log(`✅ [Path Resolver] Successfully resolved ${request} → ${resolvedPath}`);
         return originalResolveFilename.call(this, resolvedPath, parent, isMain, options);
       } catch (e: any) {
-        console.error(`❌ Failed to resolve ${request} → ${resolvedPath}:`, e?.message);
+        console.error(`❌ [Path Resolver] Failed to load resolved path ${resolvedPath}:`, e?.message);
+        console.error(`❌ [Path Resolver] Error stack:`, e?.stack);
         // Fall through to original resolution
       }
     } else {
-      console.error(`❌ Could not resolve ${request} - tried all base paths:`, possibleBasePaths);
+      console.error(`❌ [Path Resolver] Could not resolve ${request}`);
+      console.error(`❌ [Path Resolver] Tried paths:`, triedPaths);
+      console.error(`❌ [Path Resolver] Available base paths:`, possibleBasePaths);
+      console.error(`❌ [Path Resolver] Parent file: ${parentFile}`);
     }
   }
   
   // Fall back to original resolution
   try {
+    if (isAliasPath) {
+      console.log(`⚠️ [Path Resolver] Falling back to original resolution for ${request}`);
+    }
     return originalResolveFilename.call(this, request, parent, isMain, options);
   } catch (e: any) {
     // If original resolution fails and it's an @/ path, provide better error
-    if (request && request.startsWith('@/')) {
-      console.error(`❌ Module resolution failed for ${request}`);
-      console.error(`   Parent: ${parent?.filename || 'unknown'}`);
-      console.error(`   Available base paths:`, possibleBasePaths);
-      throw new Error(`Cannot find module '${request}'. Path resolver tried: ${possibleBasePaths.join(', ')}`);
+    if (isAliasPath) {
+      console.error(`❌ [Path Resolver] Original resolution also failed for ${request}`);
+      console.error(`❌ [Path Resolver] Parent: ${parentFile}`);
+      console.error(`❌ [Path Resolver] Available base paths:`, possibleBasePaths);
+      console.error(`❌ [Path Resolver] Error:`, e?.message);
+      console.error(`❌ [Path Resolver] Error stack:`, e?.stack);
+      throw new Error(`Cannot find module '${request}'. Path resolver tried: ${possibleBasePaths.join(', ')}. Parent: ${parentFile}`);
     }
     throw e;
   }
 };
 
+console.log('✅ [Path Resolver] Module._resolveFilename interceptor installed');
+
 // Also register with tsconfig-paths as fallback
+console.log('🔍 [Path Resolver] Registering tsconfig-paths as fallback...');
 try {
   const tsPaths = require('tsconfig-paths');
   const pathConfig = {
@@ -141,25 +174,36 @@ try {
     '@/plugins/*': ['plugins/*']
   };
   
+  console.log('🔍 [Path Resolver] Path config:', pathConfig);
+  
   // Register for all possible base paths
+  let registeredCount = 0;
   for (const base of possibleBasePaths) {
     try {
       tsPaths.register({
         baseUrl: base,
         paths: pathConfig
       });
-      console.log(`✅ Registered tsconfig-paths for: ${base}`);
-    } catch (e) {
+      console.log(`✅ [Path Resolver] Registered tsconfig-paths for: ${base}`);
+      registeredCount++;
+    } catch (e: any) {
+      console.log(`⚠️ [Path Resolver] Failed to register tsconfig-paths for ${base}:`, e?.message);
       // Multiple registrations might fail, that's okay
     }
   }
   
-  console.log('✅ tsconfig-paths registered as fallback');
-} catch (e) {
-  console.log('⚠️ tsconfig-paths not available, using custom resolver only');
+  if (registeredCount > 0) {
+    console.log(`✅ [Path Resolver] tsconfig-paths registered for ${registeredCount} base path(s)`);
+  } else {
+    console.warn('⚠️ [Path Resolver] tsconfig-paths registration failed for all base paths');
+  }
+} catch (e: any) {
+  console.log('⚠️ [Path Resolver] tsconfig-paths not available:', e?.message);
+  console.log('⚠️ [Path Resolver] Using custom resolver only');
 }
 
-console.log('✅ Runtime path alias resolution configured (custom resolver + tsconfig-paths)');
+console.log('✅ [Path Resolver] Runtime path alias resolution configured (custom resolver + tsconfig-paths)');
+console.log('✅ [Path Resolver] Ready to intercept require() calls');
 
 // Use lazy imports to handle module-level errors gracefully
 // These will be loaded dynamically when needed
@@ -315,27 +359,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Lazy-load modules using dynamic import to catch module-level errors
   try {
     if (!createAppModule) {
-      console.log('Loading app module from dist/app.js...');
-      console.log('Current working directory:', process.cwd());
-      console.log('__dirname:', __dirname);
+      console.log('🔍 [Module Loader] Loading app module from dist/app.js...');
+      console.log('🔍 [Module Loader] Current working directory:', process.cwd());
+      console.log('🔍 [Module Loader] __dirname:', __dirname);
       // Try multiple possible paths - Vercel might structure files differently
       // Dynamic imports from dist folder (runtime only, not available at compile time)
       try {
         createAppModule = await import('../dist/app.js') as any;
-        console.log('✅ Loaded from ../dist/app.js');
+        console.log('✅ [Module Loader] Loaded from ../dist/app.js');
       } catch (e1: any) {
         try {
           createAppModule = await import('./dist/app.js') as any;
-          console.log('✅ Loaded from ./dist/app.js');
+          console.log('✅ [Module Loader] Loaded from ./dist/app.js');
         } catch (e2: any) {
           try {
             createAppModule = await import('../../dist/app.js') as any;
-            console.log('✅ Loaded from ../../dist/app.js');
+            console.log('✅ [Module Loader] Loaded from ../../dist/app.js');
           } catch (e3: any) {
             // Try looking in src/ as fallback (Vercel might compile from src/)
             try {
               createAppModule = await import('../src/app.js') as any;
-              console.log('✅ Loaded from ../src/app.js (Vercel compiled)');
+              console.log('✅ [Module Loader] Loaded from ../src/app.js (Vercel compiled)');
             } catch (e4: any) {
               const err1 = e1 instanceof Error ? e1.message : String(e1);
               const err2 = e2 instanceof Error ? e2.message : String(e2);
@@ -346,10 +390,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
       }
-      console.log('✅ App module loaded successfully');
+      console.log('✅ [Module Loader] App module loaded successfully');
     }
     if (!configModule) {
-      console.log('Loading config module from dist/config/index.js...');
+      console.log('🔍 [Module Loader] Loading config module from dist/config/index.js...');
       // Dynamic imports from dist folder (runtime only, not available at compile time)
       try {
         configModule = await import('../dist/config/index.js') as any;
@@ -367,7 +411,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           }
         }
       }
-      console.log('✅ Config module loaded successfully');
+      console.log('✅ [Module Loader] Config module loaded successfully');
     }
   } catch (importError: any) {
     console.error('❌ Failed to load modules:', importError);
