@@ -103,7 +103,35 @@ if (!app || !foundPath) {
             console.log("✅ [API Index] Successfully loaded app.js from:", fullPath);
             break;
           } catch (requireError) {
-            console.log("⚠️ [API Index] Failed to require:", requireError.message);
+            // Check if it's an environment validation error
+            const errorMessage = requireError.message || "";
+            if (errorMessage.includes("Environment validation failed") || 
+                errorMessage.includes("DATABASE_URL") || 
+                errorMessage.includes("JWT_SECRET") ||
+                errorMessage.includes("JWT_REFRESH_SECRET")) {
+              // Environment validation error - this is expected at module load time
+              // The env vars will be available at runtime
+              console.log("⚠️ [API Index] Environment validation error (expected at load time):", requireError.message);
+              console.log("ℹ️ [API Index] Environment variables will be validated at runtime");
+              // Mark the file as found - we'll load it lazily at runtime when env vars are available
+              foundPath = fullPath;
+              // Clear the module cache so we can require it again at runtime
+              try {
+                const resolvedPath = require.resolve(fullPath);
+                if (require.cache[resolvedPath]) {
+                  delete require.cache[resolvedPath];
+                  console.log("✅ [API Index] Cleared module cache for lazy loading");
+                }
+              } catch (cacheError) {
+                // Ignore cache errors - module might not be cached yet
+                console.log("ℹ️ [API Index] Module not in cache yet (will load at runtime)");
+              }
+              console.log("✅ [API Index] Marked app.js as found (will load lazily at runtime)");
+              // Don't set app here - we'll load it lazily when needed
+              break;
+            } else {
+              console.log("⚠️ [API Index] Failed to require:", requireError.message);
+            }
           }
         }
       }
@@ -113,7 +141,7 @@ if (!app || !foundPath) {
   }
 }
 
-if (!app || !foundPath) {
+if (!foundPath) {
   const error = new Error(
     `Failed to find app.js. Tried: ${possiblePaths.join(", ")}`
   );
@@ -122,16 +150,43 @@ if (!app || !foundPath) {
   throw error;
 }
 
-console.log("✅ [API Index] App loaded successfully from:", foundPath);
-console.log("✅ [API Index] App exports:", Object.keys(app));
+// If app is not loaded yet (due to environment validation error), we'll load it lazily
+let appModule = app;
+let appModulePath = foundPath;
+
+// Lazy load function for app module
+function loadAppModule() {
+  if (!appModule) {
+    try {
+      console.log("🔄 [API Index] Loading app.js lazily from:", appModulePath);
+      appModule = require(appModulePath);
+      console.log("✅ [API Index] App loaded successfully from:", appModulePath);
+      console.log("✅ [API Index] App exports:", Object.keys(appModule));
+    } catch (loadError) {
+      console.error("❌ [API Index] Failed to load app.js:", loadError);
+      console.error("❌ [API Index] Error message:", loadError.message);
+      throw loadError;
+    }
+  }
+  return appModule;
+}
+
+if (app) {
+  console.log("✅ [API Index] App loaded successfully from:", foundPath);
+  console.log("✅ [API Index] App exports:", Object.keys(app));
+} else {
+  console.log("ℹ️ [API Index] App module will be loaded lazily at runtime");
+}
 
 // Export the handler function
 // dist/app.js exports: exports.createApp, exports.startServer
 // We need to create a handler that uses createApp
-const { createApp } = app;
-
-if (!createApp) {
-  throw new Error("createApp not found in app module. Available exports:", Object.keys(app));
+function getCreateApp() {
+  const module = loadAppModule();
+  if (!module || !module.createApp) {
+    throw new Error("createApp not found in app module. Available exports:", module ? Object.keys(module) : "module not loaded");
+  }
+  return module.createApp;
 }
 
 // Import config for database connection
@@ -200,6 +255,7 @@ async function getApp() {
 
       // Create Fastify app instance
       console.log("🔍 [API Index] Creating Fastify app...");
+      const createApp = getCreateApp();
       appInstance = await createApp({
         logger: false, // Disable logger in serverless
       });
