@@ -14,11 +14,14 @@ const Module = require('module');
 // Get absolute paths for better detection
 const projectRoot = path.resolve(__dirname, '..');
 
-// Now import type definitions and dotenv AFTER resolver setup
-// Use require for runtime, types are handled by @ts-nocheck
-const vercelNode = require('@vercel/node');
-// Load environment variables (Vercel provides them, but this ensures they're available)
+// Load environment variables FIRST (before any other requires)
+// Vercel provides them, but this ensures they're available
 require('dotenv/config');
+
+// Now import type definitions AFTER resolver setup
+// Use require for runtime, types are handled by @ts-nocheck
+// Note: @vercel/node is only needed for type definitions, not for runtime
+// We'll import it lazily if needed
 
 // Type definitions for TypeScript (even though we use @ts-nocheck)
 // @ts-ignore - types are available at runtime
