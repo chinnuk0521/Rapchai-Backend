@@ -508,8 +508,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (foundPath) {
         // Use require for absolute paths
         try {
-          createAppModule = require(foundPath);
+          // Try to require the file
+          const requiredModule = require(foundPath);
+          // Handle both CommonJS and ES module exports
+          createAppModule = requiredModule.default || requiredModule;
           console.log('✅ [Module Loader] Loaded app.js using require from:', foundPath);
+          console.log('✅ [Module Loader] Module exports:', Object.keys(requiredModule));
         } catch (requireError: any) {
           console.error('❌ [Module Loader] require() failed for:', foundPath);
           console.error('❌ [Module Loader] require() error:', requireError?.message);
@@ -577,8 +581,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (foundConfigPath) {
         // Use require for absolute paths
         try {
-          configModule = require(foundConfigPath);
+          // Try to require the file
+          const requiredModule = require(foundConfigPath);
+          // Handle both CommonJS and ES module exports
+          configModule = requiredModule.default || requiredModule;
           console.log('✅ [Module Loader] Loaded config/index.js using require from:', foundConfigPath);
+          console.log('✅ [Module Loader] Config module exports:', Object.keys(requiredModule));
         } catch (requireError: any) {
           console.error('❌ [Module Loader] require() failed for:', foundConfigPath);
           console.error('❌ [Module Loader] require() error:', requireError?.message);
