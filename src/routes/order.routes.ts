@@ -1,10 +1,10 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import { OrderService } from "@/services/order.service";
-import { asyncHandler } from "@/middleware/error.middleware.js";
+import { OrderService } from "../services/order.service";
+import { asyncHandler } from "../middleware/error.middleware.js";
 import {
   authMiddleware,
   adminMiddleware,
-} from "@/middleware/auth.middleware.js";
+} from "../middleware/auth.middleware.js";
 
 async function orderRoutes(fastify: FastifyInstance) {
   // Create order

@@ -1,14 +1,14 @@
-import { prisma } from "@/config/database.js";
-import { HashService } from "@/utils/hash.js";
-import { JWTService } from "@/utils/jwt.js";
-import { CacheService } from "@/config/redis.js";
+import { prisma } from "../config/database.js";
+import { HashService } from "../utils/hash.js";
+import { JWTService } from "../utils/jwt.js";
+import { CacheService } from "../config/redis.js";
 import {
   AppError,
   UnauthorizedError,
   ConflictError,
   NotFoundError,
-} from "@/middleware/error.middleware.js";
-import { loggers } from "@/utils/logger.js";
+} from "../middleware/error.middleware.js";
+import { loggers } from "../utils/logger.js";
 import type {
   LoginInput,
   RegisterInput,
@@ -16,7 +16,7 @@ import type {
   ChangePasswordInput,
   CreateUserInput,
   UpdateUserInput,
-} from "@/schemas/index.js";
+} from "../schemas/index.js";
 
 export class AuthService {
   static async register(data: RegisterInput) {

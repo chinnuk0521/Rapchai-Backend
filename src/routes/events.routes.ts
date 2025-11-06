@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import { prisma } from "@/config/database.js";
-import { asyncHandler } from "@/middleware/error.middleware.js";
+import { prisma } from "../config/database.js";
+import { asyncHandler } from "../middleware/error.middleware.js";
 
 async function eventsRoutes(fastify: FastifyInstance) {
   // Public Events API - No authentication required

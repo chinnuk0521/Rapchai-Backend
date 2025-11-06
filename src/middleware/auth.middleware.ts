@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { JWTService } from "@/utils/jwt.js";
-import { prisma } from "@/config/database.js";
-import { loggers } from "@/utils/logger.js";
+import { JWTService } from "../utils/jwt.js";
+import { prisma } from "../config/database.js";
+import { loggers } from "../utils/logger.js";
 
 export interface AuthenticatedRequest extends FastifyRequest {
   user: {

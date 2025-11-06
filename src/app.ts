@@ -1,7 +1,7 @@
 import Fastify, { FastifyInstance, FastifyServerOptions } from "fastify";
-import { env } from "@/config/env.js";
-import { connectDatabase } from "@/config/index.js";
-// import logger from '@/utils/logger.js';
+import { env } from "./config/env.js";
+import { connectDatabase } from "./config/index.js";
+// import logger from './utils/logger.js';
 
 // Import plugins
 import cors from "@fastify/cors";
@@ -12,16 +12,16 @@ import swagger from "@fastify/swagger";
 import swaggerUi from "@fastify/swagger-ui";
 
 // Import routes
-import authRoutes from "@/routes/auth.routes.js";
-import menuRoutes from "@/routes/menu.routes.js";
-import orderRoutes from "@/routes/order.routes.js";
-import adminRoutes from "@/routes/admin.routes.js";
-import eventsRoutes from "@/routes/events.routes.js";
-import healthRoutes from "@/routes/health.routes.js";
-import testRoutes from "@/routes/test.routes.js";
+import authRoutes from "./routes/auth.routes.js";
+import menuRoutes from "./routes/menu.routes.js";
+import orderRoutes from "./routes/order.routes.js";
+import adminRoutes from "./routes/admin.routes.js";
+import eventsRoutes from "./routes/events.routes.js";
+import healthRoutes from "./routes/health.routes.js";
+import testRoutes from "./routes/test.routes.js";
 
 // Import middleware
-import { errorHandler } from "@/middleware/error.middleware.js";
+import { errorHandler } from "./middleware/error.middleware.js";
 
 export async function createApp(
   options: FastifyServerOptions = {},

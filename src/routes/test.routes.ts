@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import { asyncHandler } from "@/middleware/error.middleware.js";
+import { asyncHandler } from "../middleware/error.middleware.js";
 
 async function testRoutes(fastify: FastifyInstance) {
   // Test endpoint to verify backend is working

@@ -1,5 +1,5 @@
 import argon2 from "argon2";
-import { env } from "@/config/env.js";
+import { env } from "../config/env.js";
 
 export class HashService {
   static async hashPassword(password: string): Promise<string> {

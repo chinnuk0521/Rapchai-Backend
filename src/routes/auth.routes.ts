@@ -1,10 +1,10 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import { AuthService } from "@/services/auth.service";
-import { asyncHandler } from "@/middleware/error.middleware.js";
+import { AuthService } from "../services/auth.service";
+import { asyncHandler } from "../middleware/error.middleware.js";
 import {
   authMiddleware,
   adminMiddleware,
-} from "@/middleware/auth.middleware.js";
+} from "../middleware/auth.middleware.js";
 
 async function authRoutes(fastify: FastifyInstance) {
   // Register user

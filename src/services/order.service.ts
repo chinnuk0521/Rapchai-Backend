@@ -1,17 +1,17 @@
-import { prisma } from "@/config/database.js";
-import { CacheService } from "@/config/redis";
+import { prisma } from "../config/database.js";
+import { CacheService } from "../config/redis";
 import {
   AppError,
   NotFoundError,
   ConflictError,
-} from "@/middleware/error.middleware.js";
-import { loggers } from "@/utils/logger.js";
+} from "../middleware/error.middleware.js";
+import { loggers } from "../utils/logger.js";
 import {
   OrderType,
   OrderStatus,
   PaymentStatus,
 } from "../generated/prisma/enums";
-import type { CreateOrderInput, OrderQueryInput } from "@/schemas/index.js";
+import type { CreateOrderInput, OrderQueryInput } from "../schemas/index.js";
 
 export class OrderService {
   static async createOrder(data: CreateOrderInput) {

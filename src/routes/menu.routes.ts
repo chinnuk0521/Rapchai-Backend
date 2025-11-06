@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import { MenuService } from "@/services/menu.service";
-import { asyncHandler } from "@/middleware/error.middleware.js";
-import { adminMiddleware } from "@/middleware/auth.middleware.js";
+import { MenuService } from "../services/menu.service";
+import { asyncHandler } from "../middleware/error.middleware.js";
+import { adminMiddleware } from "../middleware/auth.middleware.js";
 
 async function menuRoutes(fastify: FastifyInstance) {
   // Categories

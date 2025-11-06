@@ -1,17 +1,17 @@
-import { prisma } from "@/config/database.js";
-import { CacheService } from "@/config/redis";
+import { prisma } from "../config/database.js";
+import { CacheService } from "../config/redis";
 import {
   AppError,
   NotFoundError,
   ConflictError,
-} from "@/middleware/error.middleware.js";
-import { loggers } from "@/utils/logger.js";
+} from "../middleware/error.middleware.js";
+import { loggers } from "../utils/logger.js";
 import { BookingStatus } from "../generated/prisma/enums";
 import type {
   CreateEventInput,
   UpdateEventInput,
   CreateBookingInput,
-} from "@/schemas/index.js";
+} from "../schemas/index.js";
 
 export class AdminService {
   // Dashboard Analytics

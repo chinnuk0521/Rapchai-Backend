@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import { healthCheckDatabase, healthCheckRedis } from "@/config/index.js";
-import { asyncHandler } from "@/middleware/error.middleware.js";
-// import logger from '@/utils/logger.js';
+import { healthCheckDatabase, healthCheckRedis } from "../config/index.js";
+import { asyncHandler } from "../middleware/error.middleware.js";
+// import logger from '../utils/logger.js';
 
 async function healthRoutes(fastify: FastifyInstance) {
   // Basic health check

@@ -1,7 +1,7 @@
 import { FastifyRequest, FastifyReply, FastifyInstance } from "fastify";
-import { AdminService } from "@/services/admin.service";
-import { asyncHandler } from "@/middleware/error.middleware.js";
-import { adminMiddleware } from "@/middleware/auth.middleware.js";
+import { AdminService } from "../services/admin.service";
+import { asyncHandler } from "../middleware/error.middleware.js";
+import { adminMiddleware } from "../middleware/auth.middleware.js";
 
 async function adminRoutes(fastify: FastifyInstance) {
   // Dashboard analytics

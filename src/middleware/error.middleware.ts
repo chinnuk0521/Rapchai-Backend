@@ -1,6 +1,6 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { ZodError } from "zod";
-import { loggers } from "@/utils/logger.js";
+import { loggers } from "../utils/logger.js";
 
 export interface ValidationError {
   field: string;

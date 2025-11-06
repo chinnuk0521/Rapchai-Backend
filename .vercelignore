@@ -53,6 +53,8 @@ docs
 # Build artifacts (will be generated on Vercel)
 # Note: dist/ is NOT ignored - it's needed for serverless functions
 # Note: src/ is needed during build for tsc compilation, but api/index.ts imports from dist/
+# Note: Prisma generated files (src/generated/prisma) are needed at runtime
+# Note: node_modules/.prisma is needed for Prisma query engine binaries
 *.tsbuildinfo
 
 # Misc
