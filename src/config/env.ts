@@ -87,4 +87,32 @@ export function validateEnv(): EnvConfig {
   }
 }
 
-export const env = validateEnv();
+// Lazy initialization: validate environment variables only when accessed
+let _env: EnvConfig | null = null;
+
+function getEnv(): EnvConfig {
+  if (!_env) {
+    _env = validateEnv();
+  }
+  return _env;
+}
+
+// Export a proxy object that validates on first access
+export const env = new Proxy({} as EnvConfig, {
+  get(_target, prop: string | symbol) {
+    const envObj = getEnv();
+    return envObj[prop as keyof EnvConfig];
+  },
+  ownKeys() {
+    const envObj = getEnv();
+    return Object.keys(envObj);
+  },
+  has(_target, prop: string | symbol) {
+    const envObj = getEnv();
+    return prop in envObj;
+  },
+  getOwnPropertyDescriptor(_target, prop: string | symbol) {
+    const envObj = getEnv();
+    return Object.getOwnPropertyDescriptor(envObj, prop);
+  },
+});
