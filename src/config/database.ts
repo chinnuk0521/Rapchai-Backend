@@ -17,22 +17,42 @@ export const prisma =
         url: env.DATABASE_URL,
       },
     },
-    // For Supabase and serverless environments, use connection pooling
-    // If DATABASE_URL contains 'pooler' or 'supabase', it's already configured
-    // Otherwise, ensure proper connection handling for serverless
+    // Prisma automatically handles connection pooling based on DATABASE_URL
+    // For Supabase pooler, ensure DATABASE_URL uses port 6543 (Session Pooler)
+    // Connection pooling is configured via the connection string itself
   });
 
 if (env["NODE_ENV"] !== "production") {
   globalThis.__prisma = prisma;
 }
 
-export async function connectDatabase(): Promise<void> {
-  try {
-    await prisma.$connect();
-    console.log("✅ Database connected successfully");
-  } catch (error) {
-    console.error("❌ Database connection failed:", error);
-    throw error;
+export async function connectDatabase(retries: number = 3): Promise<void> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await prisma.$connect();
+      console.log("✅ Database connected successfully");
+      return;
+    } catch (error: any) {
+      lastError = error;
+      const isLastAttempt = attempt === retries;
+      
+      if (isLastAttempt) {
+        console.error(`❌ Database connection failed after ${retries} attempts:`, error?.message || error);
+        throw error;
+      }
+      
+      // Wait before retrying (exponential backoff)
+      const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
+      console.warn(`⚠️ Database connection attempt ${attempt} failed, retrying in ${delay}ms...`, error?.message || error);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+  
+  // This should never be reached, but TypeScript needs it
+  if (lastError) {
+    throw lastError;
   }
 }
 

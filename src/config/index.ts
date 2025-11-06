@@ -6,9 +6,9 @@ export {
   healthCheckDatabase,
 } from "./database.js";
 export {
-  redis,
-  pubRedis,
-  subRedis,
+  getRedis,
+  getPubRedis,
+  getSubRedis,
   connectRedis,
   disconnectRedis,
   healthCheckRedis,
