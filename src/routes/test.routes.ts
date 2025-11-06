@@ -86,14 +86,29 @@ async function testRoutes(fastify: FastifyInstance) {
       },
     },
     asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-      const { redis } = await import("../config/redis.js");
+      const { getRedis, healthCheckRedis } = await import("../config/redis.js");
+
+      const redis = getRedis();
+      if (!redis) {
+        return reply.send({
+          message: "Redis is disabled (not configured or localhost in production)",
+          redis: "disabled",
+        });
+      }
 
       try {
-        await redis.ping();
-        return reply.send({
-          message: "Redis connection successful",
-          redis: "connected",
-        });
+        const isHealthy = await healthCheckRedis();
+        if (isHealthy) {
+          return reply.send({
+            message: "Redis connection successful",
+            redis: "connected",
+          });
+        } else {
+          return reply.status(500).send({
+            message: "Redis connection failed",
+            redis: "disconnected",
+          });
+        }
       } catch (error: any) {
         return reply.status(500).send({
           message: "Redis connection failed",
