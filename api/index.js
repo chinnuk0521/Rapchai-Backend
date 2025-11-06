@@ -157,12 +157,38 @@ let appModulePath = foundPath;
 // Lazy load function for app module
 function loadAppModule() {
   if (!appModule) {
+    // Check if required environment variables are available before requiring
+    const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+    
+    if (missingEnvVars.length > 0) {
+      const error = new Error(
+        `Missing required environment variables: ${missingEnvVars.join(', ')}. ` +
+        `Please set them in Vercel Dashboard → Settings → Environment Variables → Production.`
+      );
+      console.error("❌ [API Index] Environment variables missing:", missingEnvVars);
+      throw error;
+    }
+    
     try {
       console.log("🔄 [API Index] Loading app.js lazily from:", appModulePath);
       appModule = require(appModulePath);
       console.log("✅ [API Index] App loaded successfully from:", appModulePath);
       console.log("✅ [API Index] App exports:", Object.keys(appModule));
     } catch (loadError) {
+      const errorMessage = loadError.message || "";
+      // Check if it's still an environment validation error
+      if (errorMessage.includes("Environment validation failed") || 
+          errorMessage.includes("DATABASE_URL") || 
+          errorMessage.includes("JWT_SECRET") ||
+          errorMessage.includes("JWT_REFRESH_SECRET")) {
+        const error = new Error(
+          `Environment validation failed. Missing: ${missingEnvVars.join(', ')}. ` +
+          `Please set them in Vercel Dashboard → Settings → Environment Variables → Production.`
+        );
+        console.error("❌ [API Index] Environment validation failed:", errorMessage);
+        throw error;
+      }
       console.error("❌ [API Index] Failed to load app.js:", loadError);
       console.error("❌ [API Index] Error message:", loadError.message);
       throw loadError;
