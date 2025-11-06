@@ -6,49 +6,51 @@ const path = require("path");
 const fs = require("fs");
 
 // Try to load dist/app.js
+// In Vercel: __dirname is /var/task/api
+// Try multiple paths: api/dist/app.js (copied during build), ../dist/app.js (root), etc.
 let app;
-try {
-  // In Vercel: __dirname is /var/task/api, so ../dist/app.js is /var/task/dist/app.js
-  const distPath = path.join(__dirname, "../dist/app.js");
-  
-  console.log("🔍 [API Index] Loading app from:", distPath);
-  console.log("🔍 [API Index] __dirname:", __dirname);
-  console.log("🔍 [API Index] File exists:", fs.existsSync(distPath));
-  
-  if (!fs.existsSync(distPath)) {
-    // Try alternative paths
-    const alternativePaths = [
-      path.join(process.cwd(), "dist/app.js"),
-      "/var/task/dist/app.js",
-    ];
-    
-    console.log("🔍 [API Index] Trying alternative paths:", alternativePaths);
-    
-    for (const altPath of alternativePaths) {
-      if (fs.existsSync(altPath)) {
-        console.log("✅ [API Index] Found app at:", altPath);
-        app = require(altPath);
-        break;
-      }
+const possiblePaths = [
+  // First try: api/dist/app.js (copied during build)
+  path.join(__dirname, "dist/app.js"),
+  // Second try: ../dist/app.js (root dist folder)
+  path.join(__dirname, "../dist/app.js"),
+  // Third try: absolute path
+  "/var/task/dist/app.js",
+  // Fourth try: process.cwd() relative
+  path.join(process.cwd(), "dist/app.js"),
+];
+
+console.log("🔍 [API Index] __dirname:", __dirname);
+console.log("🔍 [API Index] process.cwd():", process.cwd());
+console.log("🔍 [API Index] Trying paths:", possiblePaths);
+
+let foundPath = null;
+for (const appPath of possiblePaths) {
+  try {
+    if (fs.existsSync(appPath)) {
+      foundPath = appPath;
+      console.log("✅ [API Index] Found app.js at:", appPath);
+      app = require(appPath);
+      break;
+    } else {
+      console.log("❌ [API Index] Not found:", appPath);
     }
-    
-    if (!app) {
-      throw new Error(
-        `Failed to find app.js. Tried: ${distPath}, ${alternativePaths.join(", ")}`
-      );
-    }
-  } else {
-    app = require(distPath);
+  } catch (checkError) {
+    console.log("⚠️ [API Index] Error checking", appPath, ":", checkError.message);
   }
-  
-  console.log("✅ [API Index] App loaded successfully");
-  console.log("✅ [API Index] App exports:", Object.keys(app));
-} catch (err) {
-  console.error("❌ [API Index] Failed to load dist/app.js:", err);
-  console.error("❌ [API Index] Error message:", err.message);
-  console.error("❌ [API Index] Error stack:", err.stack);
-  throw err;
 }
+
+if (!app || !foundPath) {
+  const error = new Error(
+    `Failed to find app.js. Tried: ${possiblePaths.join(", ")}`
+  );
+  console.error("❌ [API Index] Failed to load app.js:", error);
+  console.error("❌ [API Index] Error message:", error.message);
+  throw error;
+}
+
+console.log("✅ [API Index] App loaded successfully from:", foundPath);
+console.log("✅ [API Index] App exports:", Object.keys(app));
 
 // Export the handler function
 // dist/app.js exports: exports.createApp, exports.startServer
