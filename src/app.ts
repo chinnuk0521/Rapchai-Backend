@@ -49,7 +49,12 @@ export async function createApp(
   await app.register(cors, {
     origin:
       env.NODE_ENV === "production"
-        ? ["https://rapchai.com", "https://www.rapchai.com"]
+        ? [
+            "https://rapchai.com",
+            "https://www.rapchai.com",
+            "https://rapchai.vercel.app",
+            "https://rapchai-backend.vercel.app",
+          ]
         : true,
     credentials: true,
   });
