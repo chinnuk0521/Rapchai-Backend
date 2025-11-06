@@ -2,7 +2,6 @@
   "name": "rapchai-backend",
   "version": "1.0.0",
   "description": "Production-ready backend for Rapchai Café",
-  "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json",
