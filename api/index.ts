@@ -507,9 +507,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       if (foundPath) {
         // Use require for absolute paths
-        createAppModule = require(foundPath);
-        console.log('✅ [Module Loader] Loaded app.js using require');
-      } else {
+        try {
+          createAppModule = require(foundPath);
+          console.log('✅ [Module Loader] Loaded app.js using require from:', foundPath);
+        } catch (requireError: any) {
+          console.error('❌ [Module Loader] require() failed for:', foundPath);
+          console.error('❌ [Module Loader] require() error:', requireError?.message);
+          console.error('❌ [Module Loader] require() stack:', requireError?.stack);
+          // Fall through to dynamic import
+          foundPath = null;
+        }
+      }
+      
+      if (!createAppModule && !foundPath) {
         // Fallback to dynamic imports
         try {
           createAppModule = await import('../dist/app.js') as any;
@@ -566,9 +576,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       
       if (foundConfigPath) {
         // Use require for absolute paths
-        configModule = require(foundConfigPath);
-        console.log('✅ [Module Loader] Loaded config/index.js using require');
-      } else {
+        try {
+          configModule = require(foundConfigPath);
+          console.log('✅ [Module Loader] Loaded config/index.js using require from:', foundConfigPath);
+        } catch (requireError: any) {
+          console.error('❌ [Module Loader] require() failed for:', foundConfigPath);
+          console.error('❌ [Module Loader] require() error:', requireError?.message);
+          console.error('❌ [Module Loader] require() stack:', requireError?.stack);
+          // Fall through to dynamic import
+          foundConfigPath = null;
+        }
+      }
+      
+      if (!configModule && !foundConfigPath) {
         // Fallback to dynamic imports
         try {
           configModule = await import('../dist/config/index.js') as any;
