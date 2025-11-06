@@ -410,6 +410,13 @@ async function getApp(createAppFn: (options?: any) => Promise<any>, connectDatab
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Log request for debugging
+  console.log('📥 [Handler] Incoming request:', {
+    method: req.method,
+    url: req.url,
+    path: req.url?.split('?')[0],
+  });
+  
   // Ensure we always send a response to prevent FUNCTION_INVOCATION_FAILED
   let responseSent = false;
   
