@@ -60,6 +60,10 @@ docs
 src/*.ts
 !src/generated/**/*
 *.tsbuildinfo
+# CRITICAL: Explicitly include dist/ folder (even though it's in .gitignore)
+# Vercel needs dist/ for serverless functions to work
+!dist/
+!dist/**/*
 
 # Misc
 .DS_Store
