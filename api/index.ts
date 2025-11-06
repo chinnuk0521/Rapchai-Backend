@@ -486,26 +486,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.log('🔍 [Module Loader] process.cwd():', process.cwd());
       console.log('🔍 [Module Loader] projectRoot:', projectRoot);
       
+      // Try all possible paths where dist/app.js might be located
+      // In Vercel: __dirname is /var/task/api, so ../dist/app.js is /var/task/dist/app.js
       const possibleAppPaths = [
-        path.join(projectRoot, 'dist', 'app.js'),
+        // Most likely: relative from api folder (../dist/app.js)
         path.join(__dirname, '..', 'dist', 'app.js'),
-        path.join(__dirname, 'dist', 'app.js'),
-        path.join(process.cwd(), 'dist', 'app.js'),
-        path.join(process.cwd(), 'src', 'app.js'),
+        // Alternative: absolute from project root
+        path.join(projectRoot, 'dist', 'app.js'),
+        // Fallback: absolute path for Vercel
         '/var/task/dist/app.js',
+        // Fallback: relative from current working directory
+        path.join(process.cwd(), 'dist', 'app.js'),
+        // Try src as fallback (shouldn't work but worth checking)
+        path.join(projectRoot, 'src', 'app.js'),
         '/var/task/src/app.js',
       ];
       
       console.log('🔍 [Module Loader] Checking paths:', possibleAppPaths);
+      console.log('🔍 [Module Loader] __dirname:', __dirname);
+      console.log('🔍 [Module Loader] projectRoot:', projectRoot);
+      console.log('🔍 [Module Loader] process.cwd():', process.cwd());
       
       let foundPath = null;
       for (const appPath of possibleAppPaths) {
-        if (fs.existsSync(appPath)) {
-          foundPath = appPath;
-          console.log(`✅ [Module Loader] Found app.js at: ${appPath}`);
-          break;
-        } else {
-          console.log(`❌ [Module Loader] Not found: ${appPath}`);
+        try {
+          if (fs.existsSync(appPath)) {
+            foundPath = appPath;
+            console.log(`✅ [Module Loader] Found app.js at: ${appPath}`);
+            break;
+          } else {
+            console.log(`❌ [Module Loader] Not found: ${appPath}`);
+          }
+        } catch (checkError: any) {
+          console.log(`⚠️ [Module Loader] Error checking ${appPath}:`, checkError?.message);
         }
       }
       
@@ -515,7 +528,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Try to require the file
           const requiredModule = require(foundPath);
           // Handle both CommonJS and ES module exports
-          createAppModule = requiredModule.default || requiredModule;
+          // dist/app.js uses CommonJS: exports.createApp, not default export
+          createAppModule = requiredModule;
           console.log('✅ [Module Loader] Loaded app.js using require from:', foundPath);
           console.log('✅ [Module Loader] Module exports:', Object.keys(requiredModule));
         } catch (requireError: any) {
