@@ -25,6 +25,9 @@ if (!fs.existsSync(dest)) {
 function copyRecursive(srcDir, destDir) {
   const entries = fs.readdirSync(srcDir, { withFileTypes: true });
   
+  let copiedFiles = 0;
+  let copiedDirs = 0;
+  
   for (const entry of entries) {
     const srcPath = path.join(srcDir, entry.name);
     const destPath = path.join(destDir, entry.name);
@@ -34,10 +37,18 @@ function copyRecursive(srcDir, destDir) {
         fs.mkdirSync(destPath, { recursive: true });
       }
       copyRecursive(srcPath, destPath);
+      copiedDirs++;
     } else {
       fs.copyFileSync(srcPath, destPath);
+      copiedFiles++;
+      // Log important files
+      if (entry.name === 'app.js' || entry.name === 'server.js') {
+        console.log(`✅ [Copy Script] Copied ${entry.name} to ${destPath}`);
+      }
     }
   }
+  
+  return { files: copiedFiles, dirs: copiedDirs };
 }
 
 try {
@@ -46,10 +57,22 @@ try {
   
   // Verify app.js was copied
   const appJsPath = path.join(dest, 'app.js');
+  console.log('🔍 [Copy Script] Checking for app.js at:', appJsPath);
   if (fs.existsSync(appJsPath)) {
     console.log('✅ [Copy Script] Verified: api/dist/app.js exists');
+    const stats = fs.statSync(appJsPath);
+    console.log('✅ [Copy Script] app.js size:', stats.size, 'bytes');
   } else {
     console.error('❌ [Copy Script] Warning: api/dist/app.js not found after copy');
+    console.error('❌ [Copy Script] Checking what files exist in api/dist/...');
+    try {
+      const files = fs.readdirSync(dest);
+      console.error('❌ [Copy Script] Files in api/dist/:', files.slice(0, 10).join(', '));
+      const appJsInSrc = path.join(src, 'app.js');
+      console.error('🔍 [Copy Script] Checking if app.js exists in source:', appJsInSrc, 'exists:', fs.existsSync(appJsInSrc));
+    } catch (e) {
+      console.error('❌ [Copy Script] Error listing files:', e.message);
+    }
   }
 } catch (error) {
   console.error('❌ [Copy Script] Error copying files:', error);
