@@ -584,9 +584,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Try to require the file
           const requiredModule = require(foundConfigPath);
           // Handle both CommonJS and ES module exports
-          configModule = requiredModule.default || requiredModule;
+          // dist/config/index.js exports: exports.connectDatabase, etc.
+          configModule = requiredModule;
           console.log('✅ [Module Loader] Loaded config/index.js using require from:', foundConfigPath);
           console.log('✅ [Module Loader] Config module exports:', Object.keys(requiredModule));
+          console.log('✅ [Module Loader] connectDatabase available:', typeof requiredModule.connectDatabase);
         } catch (requireError: any) {
           console.error('❌ [Module Loader] require() failed for:', foundConfigPath);
           console.error('❌ [Module Loader] require() error:', requireError?.message);
