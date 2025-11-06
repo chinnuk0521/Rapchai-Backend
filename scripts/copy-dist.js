@@ -36,8 +36,9 @@ function copyRecursive(srcDir, destDir) {
       if (!fs.existsSync(destPath)) {
         fs.mkdirSync(destPath, { recursive: true });
       }
-      copyRecursive(srcPath, destPath);
-      copiedDirs++;
+      const subResult = copyRecursive(srcPath, destPath);
+      copiedFiles += subResult.files;
+      copiedDirs += subResult.dirs + 1; // +1 for this directory
     } else {
       fs.copyFileSync(srcPath, destPath);
       copiedFiles++;
@@ -52,8 +53,8 @@ function copyRecursive(srcDir, destDir) {
 }
 
 try {
-  copyRecursive(src, dest);
-  console.log('✅ [Copy Script] Successfully copied dist/ to api/dist/');
+  const result = copyRecursive(src, dest);
+  console.log(`✅ [Copy Script] Successfully copied dist/ to api/dist/ (${result.files} files, ${result.dirs} directories)`);
   
   // Verify app.js was copied
   const appJsPath = path.join(dest, 'app.js');
