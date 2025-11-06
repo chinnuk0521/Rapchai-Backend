@@ -56,6 +56,53 @@ try {
   const result = copyRecursive(src, dest);
   console.log(`✅ [Copy Script] Successfully copied dist/ to api/dist/ (${result.files} files, ${result.dirs} directories)`);
   
+  // Copy Prisma query engine binaries from src/generated/prisma to dist/generated/prisma if needed
+  const prismaSrcDir = path.join(process.cwd(), 'src', 'generated', 'prisma');
+  const prismaDistDir = path.join(process.cwd(), 'dist', 'generated', 'prisma');
+  const prismaApiDistDir = path.join(process.cwd(), 'api', 'dist', 'generated', 'prisma');
+  
+  if (fs.existsSync(prismaSrcDir)) {
+    console.log('🔍 [Copy Script] Checking for Prisma query engine binaries...');
+    
+    // Ensure dist/generated/prisma exists
+    if (!fs.existsSync(prismaDistDir)) {
+      fs.mkdirSync(prismaDistDir, { recursive: true });
+      console.log('✅ [Copy Script] Created dist/generated/prisma directory');
+    }
+    
+    // Ensure api/dist/generated/prisma exists
+    if (!fs.existsSync(prismaApiDistDir)) {
+      fs.mkdirSync(prismaApiDistDir, { recursive: true });
+      console.log('✅ [Copy Script] Created api/dist/generated/prisma directory');
+    }
+    
+    // Copy all .node files from src/generated/prisma to dist/generated/prisma and api/dist/generated/prisma
+    const srcFiles = fs.readdirSync(prismaSrcDir);
+    const nodeFiles = srcFiles.filter(file => file.endsWith('.node'));
+    
+    for (const nodeFile of nodeFiles) {
+      const srcFile = path.join(prismaSrcDir, nodeFile);
+      const distFile = path.join(prismaDistDir, nodeFile);
+      const apiDistFile = path.join(prismaApiDistDir, nodeFile);
+      
+      // Copy to dist/generated/prisma
+      if (fs.existsSync(srcFile)) {
+        fs.copyFileSync(srcFile, distFile);
+        console.log(`✅ [Copy Script] Copied Prisma binary ${nodeFile} to dist/generated/prisma`);
+      }
+      
+      // Copy to api/dist/generated/prisma
+      if (fs.existsSync(srcFile)) {
+        fs.copyFileSync(srcFile, apiDistFile);
+        console.log(`✅ [Copy Script] Copied Prisma binary ${nodeFile} to api/dist/generated/prisma`);
+      }
+    }
+    
+    if (nodeFiles.length > 0) {
+      console.log(`✅ [Copy Script] Copied ${nodeFiles.length} Prisma query engine binary(ies)`);
+    }
+  }
+  
   // Verify app.js was copied
   const appJsPath = path.join(dest, 'app.js');
   console.log('🔍 [Copy Script] Checking for app.js at:', appJsPath);
