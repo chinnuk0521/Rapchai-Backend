@@ -226,38 +226,51 @@ async function connectDatabaseWithRetry(
   retries = MAX_INIT_RETRIES
 ): Promise<void> {
   let lastError: Error | null = null;
-  
+
+  console.log('🔍 [DB Connection] Starting database connection...');
+  console.log('🔍 [DB Connection] DATABASE_URL present:', !!process.env.DATABASE_URL);
+  console.log('🔍 [DB Connection] DATABASE_URL preview:', process.env.DATABASE_URL ? `${process.env.DATABASE_URL.substring(0, 20)}...` : 'MISSING');
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      console.log(`Database connection attempt ${attempt}/${retries}...`);
-      
+      console.log(`🔍 [DB Connection] Attempt ${attempt}/${retries}...`);
+
       // Add timeout to prevent hanging indefinitely
       const connectionPromise = connectDatabaseFn();
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Database connection timeout')), INIT_TIMEOUT_MS);
       });
-      
+
       await Promise.race([connectionPromise, timeoutPromise]);
-      
-      console.log('✅ Database connected successfully');
+
+      console.log('✅ [DB Connection] Database connected successfully');
       isDatabaseConnected = true;
       return;
     } catch (error: any) {
       lastError = error;
-      console.error(`Database connection attempt ${attempt} failed:`, error?.message || error);
-      
+      console.error(`❌ [DB Connection] Attempt ${attempt} failed:`, error?.message || error);
+      console.error(`❌ [DB Connection] Error details:`, {
+        message: error?.message,
+        code: error?.code,
+        name: error?.name,
+        stack: error?.stack?.split('\n').slice(0, 5).join('\n')
+      });
+
       if (attempt < retries) {
         // Exponential backoff: wait 1s, 2s, 4s between retries
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-        console.log(`Retrying in ${delay}ms...`);
+        console.log(`⏳ [DB Connection] Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
   }
-  
+
   // All retries failed - reset state and throw
   isDatabaseConnected = false;
-  throw lastError || new Error('Database connection failed after all retries');
+  const finalError = lastError || new Error('Database connection failed after all retries');
+  console.error('❌ [DB Connection] All connection attempts failed');
+  console.error('❌ [DB Connection] Final error:', finalError.message);
+  throw finalError;
 }
 
 async function getApp(createAppFn: (options?: any) => Promise<any>, connectDatabaseFn: () => Promise<void>) {
@@ -293,29 +306,87 @@ async function getApp(createAppFn: (options?: any) => Promise<any>, connectDatab
   // Start new initialization
   initializationPromise = (async () => {
     try {
+      console.log('🚀 [App Init] Starting application initialization...');
+      console.log('🔍 [App Init] Checking environment variables...');
+      
+      // Check required environment variables
+      const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+      const missingEnvVars: string[] = [];
+      
+      for (const envVar of requiredEnvVars) {
+        if (!process.env[envVar]) {
+          missingEnvVars.push(envVar);
+          console.error(`❌ [App Init] Missing required environment variable: ${envVar}`);
+        } else {
+          console.log(`✅ [App Init] ${envVar} is set (${process.env[envVar].substring(0, 10)}...)`);
+        }
+      }
+      
+      if (missingEnvVars.length > 0) {
+        throw new Error(`Missing required environment variables: ${missingEnvVars.join(', ')}. Please set them in Vercel Dashboard → Settings → Environment Variables`);
+      }
+      
+      // Check Prisma client path
+      console.log('🔍 [App Init] Checking Prisma client path...');
+      const prismaPaths = [
+        path.join(projectRoot, 'src', 'generated', 'prisma'),
+        path.join(projectRoot, 'dist', 'generated', 'prisma'),
+        path.join(__dirname, '..', 'src', 'generated', 'prisma'),
+        path.join(__dirname, '..', 'dist', 'generated', 'prisma'),
+      ];
+      
+      let prismaFound = false;
+      for (const prismaPath of prismaPaths) {
+        const clientPath = path.join(prismaPath, 'client.js');
+        if (fs.existsSync(clientPath)) {
+          console.log(`✅ [App Init] Prisma client found at: ${prismaPath}`);
+          prismaFound = true;
+          break;
+        } else {
+          console.log(`🔍 [App Init] Checking Prisma path: ${prismaPath} (not found)`);
+        }
+      }
+      
+      if (!prismaFound) {
+        console.warn('⚠️ [App Init] Prisma client not found in expected paths, but continuing...');
+      }
+      
       // Connect database with retry logic
       if (!isDatabaseConnected) {
+        console.log('🔍 [App Init] Connecting to database...');
         await connectDatabaseWithRetry(connectDatabaseFn);
+        console.log('✅ [App Init] Database connection established');
+      } else {
+        console.log('✅ [App Init] Database already connected');
       }
       
       // Create Fastify app instance
-      console.log('Creating Fastify app...');
+      console.log('🔍 [App Init] Creating Fastify app instance...');
       appInstance = await createAppFn({
         logger: false, // Disable logger in serverless
       });
 
       // Note: We don't need app.ready() in serverless - Fastify is ready after registration
       // app.ready() is mainly needed for server.listen() which we don't use here
-      console.log('✅ Fastify app initialized successfully');
+      console.log('✅ [App Init] Fastify app initialized successfully');
+      console.log('✅ [App Init] Application initialization complete');
       
       // Clear any previous errors on success
       initializationError = null;
       
       return appInstance;
     } catch (error: any) {
-      console.error('❌ Error initializing app:', error);
-      console.error('Error message:', error?.message);
-      console.error('Error stack:', error?.stack);
+      console.error('❌ [App Init] Error initializing app:', error);
+      console.error('❌ [App Init] Error message:', error?.message);
+      console.error('❌ [App Init] Error name:', error?.name);
+      console.error('❌ [App Init] Error code:', error?.code);
+      console.error('❌ [App Init] Error stack:', error?.stack);
+      
+      // Log additional context
+      console.error('❌ [App Init] Current working directory:', process.cwd());
+      console.error('❌ [App Init] __dirname:', __dirname);
+      console.error('❌ [App Init] NODE_ENV:', process.env.NODE_ENV);
+      console.error('❌ [App Init] DATABASE_URL present:', !!process.env.DATABASE_URL);
       
       // Reset state on failure so next request can retry
       appInstance = null;
@@ -441,9 +512,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     
     sendError(500, {
       message: 'Failed to initialize application',
-      details: errorMessage.split('\n')[0],
+      error: errorMessage.split('\n')[0],
+      details: importError?.stack?.split('\n').slice(0, 5).join('\n') || 'No stack trace available',
       hint: 'Check Vercel deployment logs for module import errors. Ensure vercel-build completed successfully.',
       buildInfo: 'Verify that npm run vercel-build completed without errors in Vercel build logs',
+      cwd: process.cwd(),
+      dirname: __dirname,
     });
     return;
   }
@@ -452,7 +526,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const connectDatabase = configModule.connectDatabase;
 
   try {
+    console.log('🔍 [Handler] Getting Fastify app instance...');
     const fastifyApp = await getApp(createApp, connectDatabase);
+    console.log('✅ [Handler] Fastify app instance obtained');
     
     // Build the full URL path - handle Vercel's path format
     let url = req.url || '/';
@@ -527,20 +603,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       res.send(response.body || response.payload || '');
     }
   } catch (error: any) {
-    console.error('Serverless function error:', error);
-    console.error('Error message:', error?.message);
-    console.error('Error stack:', error?.stack);
-    
+    console.error('❌ [Handler] Serverless function error:', error);
+    console.error('❌ [Handler] Error message:', error?.message);
+    console.error('❌ [Handler] Error name:', error?.name);
+    console.error('❌ [Handler] Error code:', error?.code);
+    console.error('❌ [Handler] Error stack:', error?.stack);
+
     // Check if error is related to database connection
-    if (error?.message?.includes('Database') || error?.message?.includes('Prisma')) {
-      console.error('Database-related error detected - resetting connection state');
+    if (error?.message?.includes('Database') || error?.message?.includes('Prisma') || error?.message?.includes('connection')) {
+      console.error('❌ [Handler] Database-related error detected - resetting connection state');
       // Reset state on database errors to allow retry
       appInstance = null;
       isDatabaseConnected = false;
       initializationPromise = null;
     }
-    
-    sendError(500, error);
+
+    // Send detailed error response
+    sendError(500, {
+      message: error?.message || 'Internal server error',
+      error: error?.name || 'UnknownError',
+      code: error?.code || 'UNKNOWN',
+      details: error?.stack?.split('\n').slice(0, 10).join('\n') || 'No stack trace available',
+      hint: error?.message?.includes('Database') ? 'Check DATABASE_URL in Vercel environment variables' : 'Check Vercel deployment logs for details',
+    });
   }
 }
 
