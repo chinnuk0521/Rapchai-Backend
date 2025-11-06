@@ -52,6 +52,9 @@ docs
 
 # Build artifacts (will be generated on Vercel)
 # Note: dist/ is NOT ignored - it's needed for serverless functions
+# CRITICAL: Exclude src/ to prevent Vercel from compiling it separately
+# Vercel should only use the pre-built dist/ folder with resolved path aliases
+src/
 *.tsbuildinfo
 
 # Misc

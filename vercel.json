@@ -13,6 +13,7 @@
       "maxDuration": 30,
       "memory": 1024
     }
-  }
+  },
+  "ignoreCommand": "git diff --quiet HEAD^ HEAD ."
 }
 
