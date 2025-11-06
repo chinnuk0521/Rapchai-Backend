@@ -157,14 +157,31 @@ let appModulePath = foundPath;
 // Lazy load function for app module
 function loadAppModule() {
   if (!appModule) {
-    // Check if required environment variables are available before requiring
+    // Debug: Log all environment variables (without values for security)
+    console.log("🔍 [API Index] Checking environment variables...");
     const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+    const envVarStatus = requiredEnvVars.map(envVar => ({
+      name: envVar,
+      exists: !!process.env[envVar],
+      length: process.env[envVar] ? process.env[envVar].length : 0
+    }));
+    console.log("🔍 [API Index] Environment variable status:", JSON.stringify(envVarStatus, null, 2));
+    
+    // Check if required environment variables are available
     const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
     
     if (missingEnvVars.length > 0) {
+      // Log all available env vars for debugging (without values)
+      const allEnvVars = Object.keys(process.env).filter(key => 
+        key.includes('DATABASE') || key.includes('JWT') || key.includes('NODE_ENV')
+      );
+      console.log("🔍 [API Index] Available env vars (filtered):", allEnvVars);
+      console.log("🔍 [API Index] NODE_ENV:", process.env.NODE_ENV);
+      
       const error = new Error(
         `Missing required environment variables: ${missingEnvVars.join(', ')}. ` +
-        `Please set them in Vercel Dashboard → Settings → Environment Variables → Production.`
+        `Please set them in Vercel Dashboard → Settings → Environment Variables → Production. ` +
+        `Current NODE_ENV: ${process.env.NODE_ENV || 'not set'}`
       );
       console.error("❌ [API Index] Environment variables missing:", missingEnvVars);
       throw error;
@@ -182,11 +199,15 @@ function loadAppModule() {
           errorMessage.includes("DATABASE_URL") || 
           errorMessage.includes("JWT_SECRET") ||
           errorMessage.includes("JWT_REFRESH_SECRET")) {
+        // Re-check environment variables in case they're available now
+        const currentMissing = requiredEnvVars.filter(envVar => !process.env[envVar]);
         const error = new Error(
-          `Environment validation failed. Missing: ${missingEnvVars.join(', ')}. ` +
-          `Please set them in Vercel Dashboard → Settings → Environment Variables → Production.`
+          `Environment validation failed. Missing: ${currentMissing.join(', ')}. ` +
+          `Please set them in Vercel Dashboard → Settings → Environment Variables → Production. ` +
+          `NODE_ENV: ${process.env.NODE_ENV || 'not set'}`
         );
         console.error("❌ [API Index] Environment validation failed:", errorMessage);
+        console.error("❌ [API Index] Missing env vars:", currentMissing);
         throw error;
       }
       console.error("❌ [API Index] Failed to load app.js:", loadError);
