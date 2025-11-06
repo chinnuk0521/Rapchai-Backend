@@ -49,7 +49,7 @@ async function testRoutes(fastify: FastifyInstance) {
       },
     },
     asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-      const { prisma } = await import("@/config/database.js");
+      const { prisma } = await import("../config/database.js");
 
       try {
         await prisma.$queryRaw`SELECT 1`;
@@ -86,7 +86,7 @@ async function testRoutes(fastify: FastifyInstance) {
       },
     },
     asyncHandler(async (request: FastifyRequest, reply: FastifyReply) => {
-      const { redis } = await import("@/config/redis.js");
+      const { redis } = await import("../config/redis.js");
 
       try {
         await redis.ping();

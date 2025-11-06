@@ -55,6 +55,10 @@ docs
 # Note: src/ is needed during build for tsc compilation, but api/index.ts imports from dist/
 # Note: Prisma generated files (src/generated/prisma) are needed at runtime
 # Note: node_modules/.prisma is needed for Prisma query engine binaries
+# CRITICAL: Exclude src/*.ts from being detected as serverless functions
+# Only api/ folder should contain serverless functions
+src/*.ts
+!src/generated/**/*
 *.tsbuildinfo
 
 # Misc
