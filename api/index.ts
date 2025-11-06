@@ -12,7 +12,11 @@ const fs = require('fs');
 const Module = require('module');
 
 // Get absolute paths for better detection
+// In Vercel: __dirname is /var/task/api, so projectRoot is /var/task
 const projectRoot = path.resolve(__dirname, '..');
+console.log('🔍 [Path Resolver] projectRoot:', projectRoot);
+console.log('🔍 [Path Resolver] __dirname:', __dirname);
+console.log('🔍 [Path Resolver] process.cwd():', process.cwd());
 
 // Load environment variables FIRST (before any other requires)
 // Vercel provides them, but this ensures they're available
