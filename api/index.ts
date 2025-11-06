@@ -2,21 +2,28 @@
 // This file is a serverless function entry point and doesn't need strict type checking
 // The dynamic imports from dist/ are runtime-only and don't exist at compile time
 
-// Import from compiled dist folder where tsc-alias has already resolved path aliases
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-// Load environment variables (Vercel provides them, but this ensures they're available)
-import 'dotenv/config';
-
-// CRITICAL: Runtime path alias resolution MUST run before any module imports
+// CRITICAL: Runtime path alias resolution MUST run BEFORE any imports
 // This ensures @/ paths work even if tsc-alias didn't resolve all paths during build
 // We use both tsconfig-paths AND a custom Module resolver for maximum compatibility
 
+// Set up path resolver IMMEDIATELY - before any other requires
 const path = require('path');
 const fs = require('fs');
 const Module = require('module');
 
 // Get absolute paths for better detection
 const projectRoot = path.resolve(__dirname, '..');
+
+// Now import type definitions and dotenv AFTER resolver setup
+// Use require for runtime, types are handled by @ts-nocheck
+const vercelNode = require('@vercel/node');
+// Load environment variables (Vercel provides them, but this ensures they're available)
+require('dotenv/config');
+
+// Type definitions for TypeScript (even though we use @ts-nocheck)
+// @ts-ignore - types are available at runtime
+type VercelRequest = any;
+type VercelResponse = any;
 const possibleBasePaths = [
   path.join(projectRoot, 'dist'),
   path.join(projectRoot, 'src'),
@@ -58,10 +65,11 @@ const pathMapping = {
 };
 
 // Custom module resolver that intercepts ALL require() calls
+// This MUST be set up before any modules are loaded
 const originalResolveFilename = Module._resolveFilename;
 Module._resolveFilename = function(request: string, parent: any, isMain: boolean, options: any) {
   // If the request starts with @/, resolve it using our path mapping
-  if (request.startsWith('@/')) {
+  if (request && request.startsWith('@/')) {
     // Extract the path after @/
     const aliasPath = request.substring(2); // Remove '@/'
     
@@ -73,6 +81,7 @@ Module._resolveFilename = function(request: string, parent: any, isMain: boolean
         // Try with .js extension
         if (fs.existsSync(candidatePath + '.js')) {
           resolvedPath = candidatePath + '.js';
+          console.log(`✅ Resolved ${request} → ${resolvedPath} (from ${base})`);
           break;
         }
         // Try without extension (for directories with index.js)
@@ -80,6 +89,7 @@ Module._resolveFilename = function(request: string, parent: any, isMain: boolean
           const indexPath = path.join(candidatePath, 'index.js');
           if (fs.existsSync(indexPath)) {
             resolvedPath = indexPath;
+            console.log(`✅ Resolved ${request} → ${resolvedPath} (from ${base})`);
             break;
           }
         }
@@ -89,13 +99,30 @@ Module._resolveFilename = function(request: string, parent: any, isMain: boolean
     }
     
     if (resolvedPath) {
-      console.log(`✅ Resolved ${request} → ${resolvedPath}`);
-      return originalResolveFilename.call(this, resolvedPath, parent, isMain, options);
+      try {
+        return originalResolveFilename.call(this, resolvedPath, parent, isMain, options);
+      } catch (e: any) {
+        console.error(`❌ Failed to resolve ${request} → ${resolvedPath}:`, e?.message);
+        // Fall through to original resolution
+      }
+    } else {
+      console.error(`❌ Could not resolve ${request} - tried all base paths:`, possibleBasePaths);
     }
   }
   
   // Fall back to original resolution
-  return originalResolveFilename.call(this, request, parent, isMain, options);
+  try {
+    return originalResolveFilename.call(this, request, parent, isMain, options);
+  } catch (e: any) {
+    // If original resolution fails and it's an @/ path, provide better error
+    if (request && request.startsWith('@/')) {
+      console.error(`❌ Module resolution failed for ${request}`);
+      console.error(`   Parent: ${parent?.filename || 'unknown'}`);
+      console.error(`   Available base paths:`, possibleBasePaths);
+      throw new Error(`Cannot find module '${request}'. Path resolver tried: ${possibleBasePaths.join(', ')}`);
+    }
+    throw e;
+  }
 };
 
 // Also register with tsconfig-paths as fallback

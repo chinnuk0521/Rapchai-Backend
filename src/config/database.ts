@@ -17,6 +17,9 @@ export const prisma =
         url: env.DATABASE_URL,
       },
     },
+    // For Supabase and serverless environments, use connection pooling
+    // If DATABASE_URL contains 'pooler' or 'supabase', it's already configured
+    // Otherwise, ensure proper connection handling for serverless
   });
 
 if (env["NODE_ENV"] !== "production") {
