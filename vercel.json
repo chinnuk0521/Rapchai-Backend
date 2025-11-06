@@ -1,5 +1,5 @@
 {
-  "buildCommand": "",
+  "buildCommand": "npm run vercel-build",
   "rewrites": [
     {
       "source": "/(.*)",
