@@ -7,7 +7,7 @@
     "build": "tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json",
     "start": "node dist/server.js",
     "postinstall": "prisma generate && rm -rf src/generated/prisma && prisma generate && tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json && echo 'Build completed: dist/ folder created'",
-    "vercel-build": "tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json && echo 'Build completed: dist/ folder created' && mkdir -p api/dist && cp -r dist/* api/dist/ 2>/dev/null || xcopy /E /I /Y dist api\\dist 2>nul || echo 'Copy skipped (Windows)' && ls -la dist/ || dir dist",
+    "vercel-build": "tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json && echo 'Build completed: dist/ folder created' && node scripts/copy-dist.js && ls -la dist/ || dir dist",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
