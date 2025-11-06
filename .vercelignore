@@ -57,7 +57,9 @@ docs
 # Note: node_modules/.prisma is needed for Prisma query engine binaries
 # CRITICAL: Exclude src/*.ts from being detected as serverless functions
 # Only api/ folder should contain serverless functions
-src/*.ts
+# NOTE: We need src/*.ts for the build process, but Vercel won't treat them as serverless functions
+# because they're not in the api/ folder. So we don't exclude them here.
+# src/*.ts
 !src/generated/**/*
 *.tsbuildinfo
 # CRITICAL: Explicitly include dist/ folder (even though it's in .gitignore)
