@@ -157,61 +157,41 @@ let appModulePath = foundPath;
 // Lazy load function for app module
 function loadAppModule() {
   if (!appModule) {
-    // Debug: Log all environment variables (without values for security)
-    console.log("🔍 [API Index] Checking environment variables...");
-    const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
-    const envVarStatus = requiredEnvVars.map(envVar => ({
-      name: envVar,
-      exists: !!process.env[envVar],
-      length: process.env[envVar] ? process.env[envVar].length : 0
-    }));
-    console.log("🔍 [API Index] Environment variable status:", JSON.stringify(envVarStatus, null, 2));
-    
-    // Check if required environment variables are available
-    const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
-    
-    if (missingEnvVars.length > 0) {
-      // Log all available env vars for debugging (without values)
-      const allEnvVars = Object.keys(process.env).filter(key => 
-        key.includes('DATABASE') || key.includes('JWT') || key.includes('NODE_ENV')
-      );
-      console.log("🔍 [API Index] Available env vars (filtered):", allEnvVars);
-      console.log("🔍 [API Index] NODE_ENV:", process.env.NODE_ENV);
-      
-      const error = new Error(
-        `Missing required environment variables: ${missingEnvVars.join(', ')}. ` +
-        `Please set them in Vercel Dashboard → Settings → Environment Variables → Production. ` +
-        `Current NODE_ENV: ${process.env.NODE_ENV || 'not set'}`
-      );
-      console.error("❌ [API Index] Environment variables missing:", missingEnvVars);
-      throw error;
-    }
-    
     try {
       console.log("🔄 [API Index] Loading app.js lazily from:", appModulePath);
+      // Debug: Log environment variable availability before requiring
+      console.log("🔍 [API Index] NODE_ENV:", process.env.NODE_ENV || 'not set');
+      const envVarKeys = Object.keys(process.env).filter(key => 
+        key.includes('DATABASE') || key.includes('JWT') || key.includes('NODE_ENV')
+      );
+      console.log("🔍 [API Index] Available env vars (filtered):", envVarKeys);
+      
+      // Load the app module - lazy validation in env.ts will handle environment variable validation
       appModule = require(appModulePath);
       console.log("✅ [API Index] App loaded successfully from:", appModulePath);
       console.log("✅ [API Index] App exports:", Object.keys(appModule));
     } catch (loadError) {
       const errorMessage = loadError.message || "";
-      // Check if it's still an environment validation error
+      console.error("❌ [API Index] Failed to load app.js:", loadError);
+      console.error("❌ [API Index] Error message:", errorMessage);
+      console.error("❌ [API Index] Error stack:", loadError.stack);
+      
+      // If it's an environment validation error, provide helpful message
       if (errorMessage.includes("Environment validation failed") || 
           errorMessage.includes("DATABASE_URL") || 
           errorMessage.includes("JWT_SECRET") ||
           errorMessage.includes("JWT_REFRESH_SECRET")) {
-        // Re-check environment variables in case they're available now
-        const currentMissing = requiredEnvVars.filter(envVar => !process.env[envVar]);
-        const error = new Error(
-          `Environment validation failed. Missing: ${currentMissing.join(', ')}. ` +
-          `Please set them in Vercel Dashboard → Settings → Environment Variables → Production. ` +
-          `NODE_ENV: ${process.env.NODE_ENV || 'not set'}`
-        );
-        console.error("❌ [API Index] Environment validation failed:", errorMessage);
-        console.error("❌ [API Index] Missing env vars:", currentMissing);
-        throw error;
+        // Log what environment variables are actually available
+        const requiredEnvVars = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET'];
+        const envVarStatus = requiredEnvVars.map(envVar => ({
+          name: envVar,
+          exists: !!process.env[envVar],
+          length: process.env[envVar] ? process.env[envVar].length : 0
+        }));
+        console.error("❌ [API Index] Environment variable status:", JSON.stringify(envVarStatus, null, 2));
+        console.error("❌ [API Index] All process.env keys:", Object.keys(process.env).slice(0, 20));
       }
-      console.error("❌ [API Index] Failed to load app.js:", loadError);
-      console.error("❌ [API Index] Error message:", loadError.message);
+      
       throw loadError;
     }
   }
