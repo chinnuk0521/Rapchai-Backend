@@ -9,34 +9,107 @@ const fs = require("fs");
 // In Vercel: __dirname is /var/task/api
 // Try multiple paths: api/dist/app.js (copied during build), ../dist/app.js (root), etc.
 let app;
+let foundPath = null;
+
+// Helper function to check if a path exists and is readable
+function tryRequire(filePath) {
+  try {
+    if (fs.existsSync(filePath)) {
+      const stats = fs.statSync(filePath);
+      if (stats.isFile()) {
+        return require(filePath);
+      }
+    }
+  } catch (err) {
+    // Ignore errors, will try next path
+  }
+  return null;
+}
+
+// Helper function to list directory contents for debugging
+function listDir(dirPath) {
+  try {
+    if (fs.existsSync(dirPath)) {
+      return fs.readdirSync(dirPath);
+    }
+  } catch (err) {
+    // Ignore errors
+  }
+  return [];
+}
+
+// Build comprehensive list of possible paths
 const possiblePaths = [
-  // First try: api/dist/app.js (copied during build)
+  // First try: api/dist/app.js (copied during build - most likely location)
   path.join(__dirname, "dist/app.js"),
   // Second try: ../dist/app.js (root dist folder)
   path.join(__dirname, "../dist/app.js"),
-  // Third try: absolute path
+  // Third try: absolute path from root
   "/var/task/dist/app.js",
-  // Fourth try: process.cwd() relative
+  // Fourth try: absolute path from api
+  "/var/task/api/dist/app.js",
+  // Fifth try: process.cwd() relative
   path.join(process.cwd(), "dist/app.js"),
+  // Sixth try: process.cwd() relative from api
+  path.join(process.cwd(), "api/dist/app.js"),
 ];
 
 console.log("🔍 [API Index] __dirname:", __dirname);
 console.log("🔍 [API Index] process.cwd():", process.cwd());
 console.log("🔍 [API Index] Trying paths:", possiblePaths);
 
-let foundPath = null;
+// Debug: List what's actually in __dirname
+console.log("🔍 [API Index] Contents of __dirname:", listDir(__dirname));
+console.log("🔍 [API Index] Contents of __dirname/..:", listDir(path.join(__dirname, "..")));
+
+// Try each path
 for (const appPath of possiblePaths) {
   try {
-    if (fs.existsSync(appPath)) {
+    const requiredApp = tryRequire(appPath);
+    if (requiredApp) {
       foundPath = appPath;
+      app = requiredApp;
       console.log("✅ [API Index] Found app.js at:", appPath);
-      app = require(appPath);
       break;
     } else {
       console.log("❌ [API Index] Not found:", appPath);
     }
   } catch (checkError) {
     console.log("⚠️ [API Index] Error checking", appPath, ":", checkError.message);
+  }
+}
+
+if (!app || !foundPath) {
+  // Additional debugging: try to find any app.js file
+  console.log("🔍 [API Index] Searching for app.js in common locations...");
+  const searchPaths = [
+    path.join(__dirname, "dist"),
+    path.join(__dirname, "../dist"),
+    "/var/task/dist",
+    "/var/task/api/dist",
+  ];
+  
+  for (const searchPath of searchPaths) {
+    try {
+      if (fs.existsSync(searchPath)) {
+        const files = listDir(searchPath);
+        console.log(`🔍 [API Index] Files in ${searchPath}:`, files.slice(0, 10));
+        if (files.includes("app.js")) {
+          const fullPath = path.join(searchPath, "app.js");
+          console.log(`🔍 [API Index] Found app.js at ${fullPath}, trying to require...`);
+          try {
+            app = require(fullPath);
+            foundPath = fullPath;
+            console.log("✅ [API Index] Successfully loaded app.js from:", fullPath);
+            break;
+          } catch (requireError) {
+            console.log("⚠️ [API Index] Failed to require:", requireError.message);
+          }
+        }
+      }
+    } catch (err) {
+      // Ignore errors
+    }
   }
 }
 
@@ -64,11 +137,31 @@ if (!createApp) {
 // Import config for database connection
 let connectDatabase;
 try {
-  const configPath = path.join(__dirname, "../dist/config/index.js");
-  if (fs.existsSync(configPath)) {
-    const configModule = require(configPath);
+  // Try multiple paths for config
+  const configPaths = [
+    path.join(path.dirname(foundPath), "config/index.js"), // Same directory as app.js
+    path.join(__dirname, "dist/config/index.js"),
+    path.join(__dirname, "../dist/config/index.js"),
+    "/var/task/dist/config/index.js",
+    "/var/task/api/dist/config/index.js",
+  ];
+  
+  let configModule = null;
+  for (const configPath of configPaths) {
+    try {
+      const requiredConfig = tryRequire(configPath);
+      if (requiredConfig) {
+        configModule = requiredConfig;
+        console.log("✅ [API Index] Config module loaded from:", configPath);
+        break;
+      }
+    } catch (err) {
+      // Try next path
+    }
+  }
+  
+  if (configModule) {
     connectDatabase = configModule.connectDatabase;
-    console.log("✅ [API Index] Config module loaded");
   } else {
     console.warn("⚠️ [API Index] Config module not found, will try to load dynamically");
   }
