@@ -70,9 +70,7 @@ const envSchema = z.object({
     .default("true"),
 });
 
-export type EnvConfig = z.infer<typeof envSchema>;
-
-export function validateEnv(): EnvConfig {
+function validateEnv() {
   try {
     return envSchema.parse(process.env);
   } catch (error) {
