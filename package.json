@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate && rm -rf src/generated/prisma && prisma generate && tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json",
     "vercel-build": "rm -rf src/generated/prisma && prisma generate && tsc --project tsconfig.json && npx tsc-alias -p tsconfig-alias.json",
     "test": "jest",
     "test:watch": "jest --watch",
